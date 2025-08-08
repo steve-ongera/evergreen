@@ -1,0 +1,414 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+{% if search_query %}
+Search Results for "{{ search_query }}" - 
+{% elif current_category %}
+{{ categories|first.name }} - 
+{% endif %}
+Farm Products
+{% endblock %}
+
+{% block meta_description %}Browse our wide selection of fresh farm products including vegetables, fruits, livestock and agricultural supplies. Quality guaranteed with fast delivery.{% endblock %}
+
+{% block extra_css %}
+<style>
+.filter-sidebar {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+}
+
+.filter-section {
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+}
+
+.filter-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.filter-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+}
+
+.price-range-inputs {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.price-range-inputs input {
+    width: 80px;
+}
+
+.sort-dropdown {
+    min-width: 200px;
+}
+
+.product-grid {
+    min-height: 400px;
+}
+
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+}
+
+.results-info {
+    color: #6c757d;
+    font-size: 14px;
+}
+
+@media (max-width: 768px) {
+    .filter-sidebar {
+        margin-bottom: 20px;
+    }
+    
+    .sort-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="container-fluid bg-light py-4">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+                {% if current_category %}
+                <li class="breadcrumb-item active">{{ current_category|capfirst }}</li>
+                {% else %}
+                <li class="breadcrumb-item active">Products</li>
+                {% endif %}
+            </ol>
+        </nav>
+        
+        <h1 class="h2 mb-0">
+            {% if search_query %}
+                Search Results for "{{ search_query }}"
+            {% elif current_category %}
+                {{ categories|first.name }} Products
+            {% else %}
+                All Products
+            {% endif %}
+        </h1>
+    </div>
+</div>
+
+<div class="container-xxl py-5">
+    <div class="container">
+        <div class="row">
+            <!-- Sidebar Filters -->
+            <div class="col-lg-3">
+                <div class="filter-sidebar sticky-top" style="top: 100px;">
+                    <h5 class="mb-4"><i class="fas fa-filter me-2"></i>Filters</h5>
+                    
+                    <form method="GET" id="filterForm">
+                        <!-- Search -->
+                        {% if not search_query %}
+                        <div class="filter-section">
+                            <h6>Search Products</h6>
+                            <div class="input-group">
+                                <input type="text" class="form-control form-control-sm" 
+                                       name="q" value="{{ search_query|default:'' }}" 
+                                       placeholder="Search products...">
+                                <button class="btn btn-outline-secondary btn-sm" type="submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Categories -->
+                        <div class="filter-section">
+                            <h6>Categories</h6>
+                            {% for category in categories %}
+                            <div class="filter-option">
+                                <label class="form-check-label">
+                                    <input class="form-check-input me-2" type="radio" 
+                                           name="category" value="{{ category.slug }}"
+                                           {% if current_category == category.slug %}checked{% endif %}>
+                                    {{ category.name }}
+                                </label>
+                                <small class="text-muted">{{ category.product_count }}</small>
+                            </div>
+                            {% endfor %}
+                            {% if current_category %}
+                            <div class="mt-2">
+                                <a href="{% url 'product_list' %}" class="btn btn-outline-secondary btn-sm">
+                                    Clear Category
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Subcategories -->
+                        {% if subcategories %}
+                        <div class="filter-section">
+                            <h6>Subcategories</h6>
+                            {% for subcategory in subcategories %}
+                            <div class="filter-option">
+                                <label class="form-check-label">
+                                    <input class="form-check-input me-2" type="radio" 
+                                           name="subcategory" value="{{ subcategory.slug }}"
+                                           {% if current_subcategory == subcategory.slug %}checked{% endif %}>
+                                    {{ subcategory.name }}
+                                </label>
+                                <small class="text-muted">{{ subcategory.product_count }}</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Brands -->
+                        {% if brands %}
+                        <div class="filter-section">
+                            <h6>Brands</h6>
+                            {% for brand in brands %}
+                            <div class="filter-option">
+                                <label class="form-check-label">
+                                    <input class="form-check-input me-2" type="radio" 
+                                           name="brand" value="{{ brand.slug }}"
+                                           {% if current_brand == brand.slug %}checked{% endif %}>
+                                    {{ brand.name }}
+                                </label>
+                                <small class="text-muted">{{ brand.product_count }}</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Price Range -->
+                        <div class="filter-section">
+                            <h6>Price Range</h6>
+                            <div class="price-range-inputs">
+                                <input type="number" class="form-control form-control-sm" 
+                                       name="min_price" value="{{ min_price|default:'' }}" 
+                                       placeholder="Min" min="0">
+                                <span>-</span>
+                                <input type="number" class="form-control form-control-sm" 
+                                       name="max_price" value="{{ max_price|default:'' }}" 
+                                       placeholder="Max" min="0">
+                            </div>
+                        </div>
+                        
+                        <!-- Special Filters -->
+                        <div class="filter-section">
+                            <h6>Special</h6>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" 
+                                       name="organic" value="true" id="organicCheck"
+                                       {% if is_organic %}checked{% endif %}>
+                                <label class="form-check-label" for="organicCheck">
+                                    <i class="fas fa-leaf text-success me-1"></i>Organic Only
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" 
+                                       name="featured" value="true" id="featuredCheck"
+                                       {% if is_featured %}checked{% endif %}>
+                                <label class="form-check-label" for="featuredCheck">
+                                    <i class="fas fa-star text-warning me-1"></i>Featured Only
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Stock Status -->
+                        <div class="filter-section">
+                            <h6>Availability</h6>
+                            <select name="stock" class="form-select form-select-sm">
+                                <option value="">All Products</option>
+                                <option value="in_stock" {% if stock_status == 'in_stock' %}selected{% endif %}>In Stock</option>
+                                <option value="low_stock" {% if stock_status == 'low_stock' %}selected{% endif %}>Low Stock</option>
+                                <option value="pre_order" {% if stock_status == 'pre_order' %}selected{% endif %}>Pre-Order</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Apply Filters -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-sm">
+                                <i class="fas fa-filter me-2"></i>Apply Filters
+                            </button>
+                            <a href="{% url 'product_list' %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-times me-2"></i>Clear All
+                            </a>
+                        </div>
+                        
+                        <!-- Preserve current filters -->
+                        {% if search_query %}
+                        <input type="hidden" name="q" value="{{ search_query }}">
+                        {% endif %}
+                        <input type="hidden" name="sort" value="{{ sort_by }}">
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="col-lg-9">
+                <!-- Sort and View Controls -->
+                <div class="d-flex justify-content-between align-items-center mb-4 sort-controls">
+                    <div class="results-info">
+                        Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} products
+                    </div>
+                    
+                    <div class="d-flex gap-3 align-items-center">
+                        <!-- Sort Dropdown -->
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle sort-dropdown" 
+                                    type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-sort me-2"></i>
+                                Sort by: 
+                                {% if sort_by == 'price_low' %}Price (Low to High)
+                                {% elif sort_by == 'price_high' %}Price (High to Low)
+                                {% elif sort_by == 'newest' %}Newest First
+                                {% elif sort_by == 'featured' %}Featured First
+                                {% elif sort_by == 'rating' %}Highest Rated
+                                {% else %}Name (A-Z){% endif %}
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="?{% url_replace request 'sort' 'name' %}">Name (A-Z)</a></li>
+                                <li><a class="dropdown-item" href="?{% url_replace request 'sort' 'price_low' %}">Price (Low to High)</a></li>
+                                <li><a class="dropdown-item" href="?{% url_replace request 'sort' 'price_high' %}">Price (High to Low)</a></li>
+                                <li><a class="dropdown-item" href="?{% url_replace request 'sort' 'newest' %}">Newest First</a></li>
+                                <li><a class="dropdown-item" href="?{% url_replace request 'sort' 'featured' %}">Featured First</a></li>
+                                <li><a class="dropdown-item" href="?{% url_replace request 'sort' 'rating' %}">Highest Rated</a></li>
+                            </ul>
+                        </div>
+                        
+                        <!-- View Toggle -->
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-secondary active" id="gridView">
+                                <i class="fas fa-th"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="listView">
+                                <i class="fas fa-list"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Products Grid -->
+                <div class="product-grid" id="productGrid">
+                    {% if page_obj %}
+                    <div class="row g-4" id="productsContainer">
+                        {% for product in page_obj %}
+                        <div class="col-xl-4 col-lg-6 col-md-6 product-card">
+                            {% include 'products/product_card.html' %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-4">
+                            <i class="fas fa-search fa-3x text-muted"></i>
+                        </div>
+                        <h4>No Products Found</h4>
+                        <p class="text-muted">Try adjusting your filters or search terms.</p>
+                        <a href="{% url 'product_list' %}" class="btn btn-success">
+                            <i class="fas fa-arrow-left me-2"></i>View All Products
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                <div class="pagination-container mt-5">
+                    <nav aria-label="Product pagination">
+                        <ul class="pagination">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% url_replace request 'page' page_obj.previous_page_number %}">
+                                    <i class="fas fa-chevron-left"></i> Previous
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% url_replace request 'page' num %}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                            {% endfor %}
+                            
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% url_replace request 'page' page_obj.next_page_number %}">
+                                    Next <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    
+                    <div class="results-info">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-submit form on filter change
+document.querySelectorAll('#filterForm input, #filterForm select').forEach(element => {
+    element.addEventListener('change', function() {
+        document.getElementById('filterForm').submit();
+    });
+});
+
+// View toggle functionality
+document.getElementById('listView').addEventListener('click', function() {
+    document.getElementById('gridView').classList.remove('active');
+    this.classList.add('active');
+    
+    // Change to list view
+    document.querySelectorAll('.product-card').forEach(card => {
+        card.className = 'col-12 product-card';
+        card.querySelector('.product-item').classList.add('d-md-flex');
+    });
+});
+
+document.getElementById('gridView').addEventListener('click', function() {
+    document.getElementById('listView').classList.remove('active');
+    this.classList.add('active');
+    
+    // Change to grid view
+    document.querySelectorAll('.product-card').forEach(card => {
+        card.className = 'col-xl-4 col-lg-6 col-md-6 product-card';
+        card.querySelector('.product-item').classList.remove('d-md-flex');
+    });
+});
+
+// WhatsApp ordering function
+function orderViaWhatsApp(productName, price) {
+    const message = `Hi! I'm interested in ordering: ${productName} (KSh ${price})`;
+    const whatsappNumber = '+254700000000'; // Replace with your WhatsApp number
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+    window.open(whatsappURL, '_blank');
+}
+</script>
+{% endblock %}

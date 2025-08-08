@@ -1,0 +1,427 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load product_extras %}
+{% block title %}Fresh Farm Products - Quality Agricultural Products{% endblock %}
+
+{% block meta_description %}Discover fresh, organic farm products including vegetables, fruits, livestock, and agricultural supplies. Quality guaranteed with fast delivery.{% endblock %}
+
+{% block extra_css %}
+<style>
+.hero-carousel {
+    height: 500px;
+    background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%);
+}
+
+.category-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.product-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 2;
+}
+
+.product-image-container {
+    height: 200px;
+    overflow: hidden;
+}
+
+.product-image-container img {
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.product-item:hover .product-image-container img {
+    transform: scale(1.1);
+}
+
+.price-original {
+    text-decoration: line-through;
+    color: #6c757d;
+}
+
+.rating-stars {
+    color: #ffc107;
+}
+
+.whatsapp-btn {
+    background: #25D366;
+    border: none;
+}
+
+.whatsapp-btn:hover {
+    background: #128C7E;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Carousel Start -->
+<div class="container-fluid p-0 mb-5">
+    <div id="heroCarousel" class="carousel slide hero-carousel" data-bs-ride="carousel">
+        <div class="carousel-inner">
+            <div class="carousel-item active">
+                <div class="d-flex align-items-center justify-content-center h-100" style="background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('{% static "img/hero-bg-1.jpg" %}'); background-size: cover; background-position: center;">
+                    <div class="container">
+                        <div class="row justify-content-start">
+                            <div class="col-lg-7 text-white">
+                                <h1 class="display-2 mb-4 fw-bold">Fresh Organic Products</h1>
+                                <p class="fs-4 mb-4">Directly from farm to your table. Quality guaranteed, sustainably grown.</p>
+                                <a href="{% url 'product_list' %}" class="btn btn-success btn-lg rounded-pill px-5 py-3 me-3">
+                                    <i class="fas fa-shopping-basket me-2"></i>Shop Now
+                                </a>
+                                <a href="#categories" class="btn btn-outline-light btn-lg rounded-pill px-5 py-3">
+                                    <i class="fas fa-leaf me-2"></i>Explore Categories
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="carousel-item">
+                <div class="d-flex align-items-center justify-content-center h-100" style="background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('{% static "img/hero-bg-2.jpg" %}'); background-size: cover; background-position: center;">
+                    <div class="container">
+                        <div class="row justify-content-start">
+                            <div class="col-lg-7 text-white">
+                                <h1 class="display-2 mb-4 fw-bold">Natural & Healthy</h1>
+                                <p class="fs-4 mb-4">Premium quality agricultural products for healthy living.</p>
+                                <a href="{% url 'product_list' %}?organic=true" class="btn btn-success btn-lg rounded-pill px-5 py-3 me-3">
+                                    <i class="fas fa-seedling me-2"></i>Organic Products
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon"></span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon"></span>
+        </button>
+    </div>
+</div>
+<!-- Hero Carousel End -->
+
+<!-- Categories Section Start -->
+<section id="categories" class="container-xxl py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5 mb-3">Shop by Category</h2>
+            <p class="lead text-muted">Explore our wide range of agricultural products</p>
+        </div>
+        <div class="row g-4">
+            {% for category in categories %}
+            <div class="col-lg-3 col-md-6">
+                <div class="card category-card h-100 border-0 shadow-sm transition-all">
+                    <div class="card-body text-center p-4">
+                        {% if category.image %}
+                        <img src="{{ category.image.url }}" alt="{{ category.name }}" class="img-fluid mb-3" style="height: 80px; width: 80px; object-fit: cover; border-radius: 50%;">
+                        {% else %}
+                        <div class="bg-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="height: 80px; width: 80px;">
+                            <i class="fas fa-leaf text-white fs-2"></i>
+                        </div>
+                        {% endif %}
+                        <h5 class="card-title">{{ category.name }}</h5>
+                        <p class="card-text text-muted small">{{ category.product_count }} products</p>
+                        <a href="{% url 'category_products' category.slug %}" class="btn btn-outline-success rounded-pill">
+                            Explore <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+<!-- Categories Section End -->
+
+<!-- Featured Products Start -->
+<section class="container-xxl py-5 bg-light">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5 mb-3">Featured Products</h2>
+            <p class="lead text-muted">Our top-quality handpicked products</p>
+        </div>
+        <div class="row g-4">
+            {% for product in featured_products %}
+            <div class="col-xl-3 col-lg-4 col-md-6">
+                <div class="product-item card h-100 border-0 shadow-sm">
+                    <div class="position-relative product-image-container">
+                        {% if product.main_image %}
+                        <img src="{{ product.main_image.url }}" class="card-img-top" alt="{{ product.name }}">
+                        {% else %}
+                        <div class="bg-light d-flex align-items-center justify-content-center h-100">
+                            <i class="fas fa-image text-muted fs-1"></i>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Product badges -->
+                        {% if product.is_featured %}
+                        <span class="badge bg-warning product-badge">Featured</span>
+                        {% endif %}
+                        {% if product.is_organic %}
+                        <span class="badge bg-success product-badge" style="top: 45px;">Organic</span>
+                        {% endif %}
+                        {% if product.discount_percentage %}
+                        <span class="badge bg-danger product-badge" style="top: {% if product.is_organic %}80px{% else %}45px{% endif %};">
+                            -{{ product.discount_percentage }}%
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="card-body text-center p-4">
+                        <h6 class="card-title mb-2">
+                            <a href="{{ product.get_absolute_url }}" class="text-decoration-none text-dark">
+                                {{ product.name }}
+                            </a>
+                        </h6>
+                        <p class="text-muted small mb-3">{{ product.category.name }}</p>
+                        
+                        <div class="price mb-3">
+                            <span class="fw-bold text-success fs-5">KSh {{ product.selling_price }}</span>
+                            {% if product.discount_price %}
+                            <span class="price-original ms-2">KSh {{ product.price }}</span>
+                            {% endif %}
+                        </div>
+                        
+                        {% if product.reviews.count %}
+                        <div class="rating mb-3">
+                            <div class="rating-stars">
+                                {% for i in "12345"|make_list %}
+                                <i class="fas fa-star"></i>
+                                {% endfor %}
+                            </div>
+                            <small class="text-muted">({{ product.reviews.count }} reviews)</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="card-footer bg-white border-0 pt-0">
+                        <div class="d-flex gap-2">
+                            <a href="{{ product.get_absolute_url }}" class="btn btn-outline-primary flex-fill btn-sm">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
+                            <button class="btn btn-success whatsapp-btn flex-fill btn-sm" onclick="orderViaWhatsApp('{{ product.name }}', '{{ product.selling_price }}')">
+                                <i class="fab fa-whatsapp me-1"></i>Order
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="text-center mt-5">
+            <a href="{% url 'product_list' %}?featured=true" class="btn btn-success btn-lg rounded-pill px-5">
+                View All Featured Products <i class="fas fa-arrow-right ms-2"></i>
+            </a>
+        </div>
+    </div>
+</section>
+<!-- Featured Products End -->
+
+<!-- Product Tabs Start -->
+<section class="container-xxl py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5 mb-3">Our Products</h2>
+            <p class="lead text-muted">Fresh products categorized for your convenience</p>
+        </div>
+        
+        <!-- Nav tabs -->
+        <ul class="nav nav-pills justify-content-center mb-5" id="productTabs">
+            <li class="nav-item me-2">
+                <button class="btn btn-outline-success active" data-bs-toggle="pill" data-bs-target="#vegetables" type="button">
+                    <i class="fas fa-carrot me-2"></i>Vegetables
+                </button>
+            </li>
+            <li class="nav-item me-2">
+                <button class="btn btn-outline-success" data-bs-toggle="pill" data-bs-target="#fruits" type="button">
+                    <i class="fas fa-apple-alt me-2"></i>Fruits
+                </button>
+            </li>
+            <li class="nav-item me-2">
+                <button class="btn btn-outline-success" data-bs-toggle="pill" data-bs-target="#newArrivals" type="button">
+                    <i class="fas fa-star me-2"></i>New Arrivals
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="btn btn-outline-success" data-bs-toggle="pill" data-bs-target="#organic" type="button">
+                    <i class="fas fa-leaf me-2"></i>Organic
+                </button>
+            </li>
+        </ul>
+        
+        <!-- Tab content -->
+        <div class="tab-content" id="productTabContent">
+            <!-- Vegetables Tab -->
+            <div class="tab-pane fade show active" id="vegetables">
+                <div class="row g-4">
+                    {% for product in vegetables %}
+                    <div class="col-xl-3 col-lg-4 col-md-6">
+                        {% include 'product_card.html' %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Fruits Tab -->
+            <div class="tab-pane fade" id="fruits">
+                <div class="row g-4">
+                    {% for product in fruits %}
+                    <div class="col-xl-3 col-lg-4 col-md-6">
+                        {% include 'product_card.html' %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- New Arrivals Tab -->
+            <div class="tab-pane fade" id="newArrivals">
+                <div class="row g-4">
+                    {% for product in new_products %}
+                    <div class="col-xl-3 col-lg-4 col-md-6">
+                        {% include 'product_card.html' %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Organic Tab -->
+            <div class="tab-pane fade" id="organic">
+                <div class="row g-4">
+                    {% for product in organic_products %}
+                    <div class="col-xl-3 col-lg-4 col-md-6">
+                        {% include 'product_card.html' %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-5">
+            <a href="{% url 'product_list' %}" class="btn btn-success btn-lg rounded-pill px-5">
+                Browse All Products <i class="fas fa-arrow-right ms-2"></i>
+            </a>
+        </div>
+    </div>
+</section>
+<!-- Product Tabs End -->
+
+<!-- Why Choose Us Start -->
+<section class="container-fluid bg-light py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5 mb-3">Why Choose Us</h2>
+            <p class="lead text-muted">Quality, freshness, and reliability guaranteed</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="text-center p-4">
+                    <div class="bg-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="height: 80px; width: 80px;">
+                        <i class="fas fa-leaf text-white fs-2"></i>
+                    </div>
+                    <h5>100% Organic</h5>
+                    <p class="text-muted">All our products are naturally grown without harmful chemicals.</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="text-center p-4">
+                    <div class="bg-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="height: 80px; width: 80px;">
+                        <i class="fas fa-truck text-white fs-2"></i>
+                    </div>
+                    <h5>Fast Delivery</h5>
+                    <p class="text-muted">Quick and reliable delivery to your doorstep across Kenya.</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="text-center p-4">
+                    <div class="bg-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="height: 80px; width: 80px;">
+                        <i class="fas fa-shield-alt text-white fs-2"></i>
+                    </div>
+                    <h5>Quality Assured</h5>
+                    <p class="text-muted">Every product undergoes quality checks before delivery.</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="text-center p-4">
+                    <div class="bg-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="height: 80px; width: 80px;">
+                        <i class="fab fa-whatsapp text-white fs-2"></i>
+                    </div>
+                    <h5>Easy Ordering</h5>
+                    <p class="text-muted">Simple WhatsApp ordering system for your convenience.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- Why Choose Us End -->
+
+<!-- Newsletter Start -->
+<section class="container-xxl py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center">
+                <div class="bg-success rounded-3 p-5 text-white">
+                    <h3 class="mb-3">Stay Updated!</h3>
+                    <p class="mb-4">Subscribe to get notifications about new products and special offers.</p>
+                    <form class="row g-3 justify-content-center">
+                        <div class="col-md-6">
+                            <input type="email" class="form-control form-control-lg" placeholder="Enter your email">
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-light btn-lg px-4">
+                                <i class="fas fa-bell me-2"></i>Subscribe
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- Newsletter End -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// WhatsApp ordering function
+function orderViaWhatsApp(productName, price) {
+    const message = `Hi! I'm interested in ordering: ${productName} (KSh ${price})`;
+    const whatsappNumber = '+254700000000'; // Replace with your WhatsApp number
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+    window.open(whatsappURL, '_blank');
+}
+
+// Smooth scrolling for anchor links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    });
+});
+
+// Auto-advance carousel
+const heroCarousel = document.getElementById('heroCarousel');
+if (heroCarousel) {
+    const carousel = new bootstrap.Carousel(heroCarousel, {
+        interval: 5000,
+        wrap: true
+    });
+}
+
+{% endblock %}
