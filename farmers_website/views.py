@@ -173,7 +173,7 @@ def product_list(request):
         'max_price': max_price,
     }
     
-    return render(request, 'products/product_list.html', context)
+    return render(request, 'product_list.html', context)
 
 
 def product_detail(request, slug):
