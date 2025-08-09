@@ -483,59 +483,113 @@ import urllib.parse
 
 logger = logging.getLogger(__name__)
 
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import JsonResponse
+from django.contrib import messages
+from django.urls import reverse
+from django.utils import timezone
+from django.db.models import Sum, F
+from .models import Cart, CartItem, Product, Customer, ProductImage
+import logging
+import urllib.parse
+
+logger = logging.getLogger(__name__)
+
 def get_cart_summary(request):
     """Get cart summary for display"""
     try:
+        # Create session if doesn't exist
         if not request.session.session_key:
             request.session.create()
-            
+            logger.info(f"Created new session: {request.session.session_key}")
+        
+        # Try to get cart
+        cart = None
         try:
             cart = Cart.objects.get(session_id=request.session.session_key)
+            logger.info(f"Found cart for session: {request.session.session_key}")
         except Cart.DoesNotExist:
+            logger.info(f"No cart found for session: {request.session.session_key}")
             cart = None
-            
-        # Get cart items with product details
+        
+        # Initialize empty cart data
         cart_items = []
         cart_total = 0
         cart_amount = 0.0
         
-        if cart:
-            items = cart.items.select_related('product').all()
-            for item in items:
-                cart_items.append({
-                    'id': item.id,
-                    'product_id': item.product.id,
-                    'product_name': item.product.name,
-                    'product_slug': item.product.slug,
-                    'product_image': item.product.main_image.url if item.product.main_image else None,
-                    'unit_price': float(item.product.selling_price),
-                    'quantity': item.quantity,
-                    'total_price': float(item.total_price),
-                    'stock_available': item.product.stock_quantity,
-                    'unit': item.product.get_unit_display(),
-                    'sku': item.product.sku
-                })
-            cart_total = cart.total_items
-            cart_amount = float(cart.total_amount)
+        if cart and cart.items.exists():
+            # Get cart items with related data
+            items = cart.items.select_related('product', 'product__category', 'product__brand').prefetch_related('product__images').all()
             
+            for item in items:
+                try:
+                    # Safely get main image
+                    main_image = None
+                    try:
+                        main_image = item.product.images.filter(is_main=True).first()
+                        if not main_image:
+                            main_image = item.product.images.first()
+                    except Exception as img_error:
+                        logger.warning(f"Error getting image for product {item.product.id}: {str(img_error)}")
+                        main_image = None
+                    
+                    # Build cart item data
+                    cart_item_data = {
+                        'id': item.id,
+                        'product_id': item.product.id,
+                        'product_name': item.product.name,
+                        'product_slug': item.product.slug,
+                        'product_image': main_image.image.url if main_image else None,
+                        'unit_price': float(item.product.selling_price),
+                        'quantity': item.quantity,
+                        'total_price': float(item.total_price),
+                        'stock_available': item.product.stock_quantity,
+                        'unit': item.product.get_unit_display(),
+                        'sku': item.product.sku,
+                        'is_in_stock': item.product.is_in_stock,
+                        'category': item.product.category.name if item.product.category else 'Unknown'
+                    }
+                    
+                    cart_items.append(cart_item_data)
+                    
+                except Exception as item_error:
+                    logger.error(f"Error processing cart item {item.id}: {str(item_error)}")
+                    continue
+            
+            # Calculate totals safely
+            try:
+                cart_total = cart.total_items
+                cart_amount = float(cart.total_amount)
+            except Exception as calc_error:
+                logger.error(f"Error calculating cart totals: {str(calc_error)}")
+                # Fallback calculation
+                cart_total = sum(item['quantity'] for item in cart_items)
+                cart_amount = sum(item['total_price'] for item in cart_items)
+        
         context = {
             'cart_items': cart_items,
             'cart_total': cart_total,
             'cart_amount': cart_amount,
-            'cart': cart
+            'cart': cart,
+            'has_items': len(cart_items) > 0
         }
         
+        logger.info(f"Cart summary successful: {cart_total} items, KSh {cart_amount}")
         return render(request, 'cart_summary.html', context)
         
     except Exception as e:
-        logger.error(f"Error getting cart summary: {str(e)}")
-        messages.error(request, 'An error occurred while fetching cart')
+        logger.error(f"Critical error in get_cart_summary: {str(e)}", exc_info=True)
+        messages.error(request, f'An error occurred while fetching cart: {str(e)}')
+        
+        # Return empty cart context
         return render(request, 'cart_summary.html', {
             'cart_items': [],
             'cart_total': 0,
             'cart_amount': 0.0,
-            'cart': None
+            'cart': None,
+            'has_items': False
         })
+
 
 import json
 from django.http import JsonResponse
@@ -678,12 +732,23 @@ def remove_cart_item(request, item_id):
         
     return redirect('cart_summary')
 
+import urllib.parse
+import logging
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.utils import timezone
+from django.db import transaction
+from django.conf import settings
+from .models import Cart, Customer, Order, OrderItem
+
+logger = logging.getLogger(__name__)
+
 def checkout(request):
     """Checkout page for WhatsApp order"""
     try:
+        # Create session key if it doesn't exist
         if not request.session.session_key:
-            messages.error(request, 'Your cart is empty')
-            return redirect('cart_summary')
+            request.session.create()
             
         try:
             cart = Cart.objects.get(session_id=request.session.session_key)
@@ -698,12 +763,20 @@ def checkout(request):
         # Get cart items with product details
         cart_items = []
         for item in cart.items.select_related('product').all():
+            # Handle missing product image
+            product_image_url = None
+            if item.product.main_image:
+                try:
+                    product_image_url = item.product.main_image.url
+                except (ValueError, AttributeError):
+                    product_image_url = None
+            
             cart_items.append({
                 'id': item.id,
                 'product_id': item.product.id,
                 'product_name': item.product.name,
                 'product_slug': item.product.slug,
-                'product_image': item.product.main_image.url if item.product.main_image else None,
+                'product_image': product_image_url,
                 'unit_price': float(item.product.selling_price),
                 'quantity': item.quantity,
                 'total_price': float(item.total_price),
@@ -721,103 +794,241 @@ def checkout(request):
         return render(request, 'checkout.html', context)
         
     except Exception as e:
-        logger.error(f"Error in checkout: {str(e)}")
-        messages.error(request, 'An error occurred during checkout')
-        return redirect('cart_summary')
+        logger.error(f"Error in checkout: {str(e)}", exc_info=True)
+        messages.error(request, 'An error occurred during checkout. Please try again.')
+        return redirect('product_list')
+
 
 def generate_whatsapp_message(request):
     """Generate WhatsApp message for order"""
-    if request.method == 'POST':
+    if request.method != 'POST':
+        return redirect('checkout')
+    
+    try:
+        # Get customer info from form
+        customer_name = request.POST.get('customer_name', '').strip()
+        customer_phone = request.POST.get('customer_phone', '').strip()
+        customer_address = request.POST.get('customer_address', '').strip()
+        customer_notes = request.POST.get('customer_notes', '').strip()
+        customer_email = request.POST.get('customer_email', '').strip()
+        customer_type = request.POST.get('customer_type', 'individual')
+        
+        # Optional farm information
+        farm_name = request.POST.get('farm_name', '').strip()
+        farm_size = request.POST.get('farm_size', '').strip()
+        farming_type = request.POST.get('farming_type', '').strip()
+        contact_method = request.POST.get('contact_method', 'whatsapp')
+        
+        # Validate required fields
+        if not all([customer_name, customer_phone, customer_address]):
+            messages.error(request, 'Please fill in all required fields (Name, Phone, and Address)')
+            return redirect('checkout')
+        
+        # Validate phone number format
+        phone_cleaned = customer_phone.replace(' ', '').replace('+', '')
+        if not phone_cleaned.isdigit() or len(phone_cleaned) < 10:
+            messages.error(request, 'Please enter a valid phone number')
+            return redirect('checkout')
+        
+        # Ensure session exists
+        if not request.session.session_key:
+            request.session.create()
+            
+        # Get cart
         try:
-            # Get customer info from form
-            customer_name = request.POST.get('customer_name', '').strip()
-            customer_phone = request.POST.get('customer_phone', '').strip()
-            customer_address = request.POST.get('customer_address', '').strip()
-            customer_notes = request.POST.get('customer_notes', '').strip()
+            cart = Cart.objects.get(session_id=request.session.session_key)
+        except Cart.DoesNotExist:
+            messages.error(request, 'Your cart is empty')
+            return redirect('cart_summary')
             
-            if not all([customer_name, customer_phone, customer_address]):
-                messages.error(request, 'Please fill in all required fields')
-                return redirect('checkout')
+        cart_items = cart.items.select_related('product').all()
+        if not cart_items.exists():
+            messages.error(request, 'Your cart is empty')
+            return redirect('cart_summary')
+        
+        # Create or get customer
+        customer = None
+        try:
+            with transaction.atomic():
+                if customer_email:
+                    try:
+                        customer = Customer.objects.get(email=customer_email)
+                        # Update customer info
+                        customer.first_name = customer_name.split(' ')[0] if ' ' in customer_name else customer_name
+                        customer.last_name = ' '.join(customer_name.split(' ')[1:]) if ' ' in customer_name else ''
+                        customer.phone = customer_phone
+                        customer.address_line1 = customer_address
+                        customer.customer_type = customer_type
+                        if farm_name:
+                            customer.farm_name = farm_name
+                        if farm_size:
+                            try:
+                                customer.farm_size = float(farm_size)
+                            except ValueError:
+                                pass
+                        if farming_type:
+                            customer.farming_type = farming_type
+                        customer.save()
+                    except Customer.DoesNotExist:
+                        # Create new customer
+                        name_parts = customer_name.split(' ', 1)
+                        customer = Customer.objects.create(
+                            first_name=name_parts[0],
+                            last_name=name_parts[1] if len(name_parts) > 1 else '',
+                            email=customer_email,
+                            phone=customer_phone,
+                            address_line1=customer_address,
+                            customer_type=customer_type,
+                            farm_name=farm_name if farm_name else '',
+                            farm_size=float(farm_size) if farm_size else None,
+                            farming_type=farming_type if farming_type else '',
+                            city='', # Will be filled later
+                            county='' # Will be filled later
+                        )
+                else:
+                    # Create customer without email (for WhatsApp-only orders)
+                    name_parts = customer_name.split(' ', 1)
+                    customer = Customer.objects.create(
+                        first_name=name_parts[0],
+                        last_name=name_parts[1] if len(name_parts) > 1 else '',
+                        email=f"temp_{customer_phone}@temp.com",  # Temporary email
+                        phone=customer_phone,
+                        address_line1=customer_address,
+                        customer_type=customer_type,
+                        farm_name=farm_name if farm_name else '',
+                        farm_size=float(farm_size) if farm_size else None,
+                        farming_type=farming_type if farming_type else '',
+                        city='', # Will be filled later
+                        county='' # Will be filled later
+                    )
+        except Exception as e:
+            logger.error(f"Error creating/updating customer: {str(e)}", exc_info=True)
+            messages.error(request, 'Error processing customer information')
+            return redirect('checkout')
+        
+        # Build WhatsApp message
+        message_parts = []
+        message_parts.append("🌾 *NEW ORDER REQUEST* 🌾")
+        message_parts.append("")
+        message_parts.append("📋 *Customer Information:*")
+        message_parts.append(f"👤 Name: {customer_name}")
+        message_parts.append(f"📱 Phone: {customer_phone}")
+        message_parts.append(f"📍 Address: {customer_address}")
+        
+        if customer_email:
+            message_parts.append(f"📧 Email: {customer_email}")
+        
+        message_parts.append(f"👥 Customer Type: {dict([('individual', 'Individual Farmer'), ('cooperative', 'Farmers Cooperative'), ('business', 'Agribusiness'), ('institution', 'Institution')]).get(customer_type, customer_type)}")
+        
+        if farm_name:
+            message_parts.append(f"🏡 Farm: {farm_name}")
+        if farm_size:
+            message_parts.append(f"📏 Farm Size: {farm_size} acres")
+        if farming_type:
+            message_parts.append(f"🌱 Farming Type: {farming_type}")
             
-            # Get cart
-            if not request.session.session_key:
-                messages.error(request, 'Your cart is empty')
-                return redirect('cart_summary')
-                
+        message_parts.append("")
+        message_parts.append("🛒 *Order Details:*")
+        
+        total_amount = 0
+        for item in cart_items:
             try:
-                cart = Cart.objects.get(session_id=request.session.session_key)
-            except Cart.DoesNotExist:
-                messages.error(request, 'Your cart is empty')
-                return redirect('cart_summary')
-                
-            if not cart.items.exists():
-                messages.error(request, 'Your cart is empty')
-                return redirect('cart_summary')
-            
-            # Build WhatsApp message
-            message_parts = []
-            message_parts.append("🌾 *NEW ORDER REQUEST* 🌾")
-            message_parts.append("")
-            message_parts.append("📋 *Customer Information:*")
-            message_parts.append(f"👤 Name: {customer_name}")
-            message_parts.append(f"📱 Phone: {customer_phone}")
-            message_parts.append(f"📍 Address: {customer_address}")
-            message_parts.append("")
-            message_parts.append("🛒 *Order Details:*")
-            
-            total_amount = 0
-            for item in cart.items.select_related('product').all():
-                product_total = item.quantity * item.product.selling_price
+                product_total = float(item.quantity * item.product.selling_price)
                 total_amount += product_total
                 message_parts.append(f"• {item.product.name}")
                 message_parts.append(f"  Quantity: {item.quantity} {item.product.get_unit_display()}")
-                message_parts.append(f"  Price: KSh {item.product.selling_price:,.2f} each")
+                message_parts.append(f"  Price: KSh {float(item.product.selling_price):,.2f} each")
                 message_parts.append(f"  Subtotal: KSh {product_total:,.2f}")
                 message_parts.append("")
-            
-            message_parts.append(f"💰 *Total Amount: KSh {total_amount:,.2f}*")
+            except Exception as e:
+                logger.error(f"Error processing cart item {item.id}: {str(e)}")
+                continue
+        
+        message_parts.append(f"💰 *Total Amount: KSh {total_amount:,.2f}*")
+        message_parts.append("")
+        
+        if customer_notes:
+            message_parts.append("📝 *Special Instructions:*")
+            message_parts.append(customer_notes)
             message_parts.append("")
-            
-            if customer_notes:
-                message_parts.append("📝 *Special Instructions:*")
-                message_parts.append(customer_notes)
-                message_parts.append("")
-            
-            message_parts.append("⏰ *Order Time:* " + timezone.now().strftime("%d/%m/%Y %I:%M %p"))
-            message_parts.append("")
-            message_parts.append("Please confirm this order and let me know the delivery details. Thank you! 🙏")
-            
-            # Join message
-            whatsapp_message = "\n".join(message_parts)
-            
+        
+        message_parts.append(f"📞 *Preferred Contact: {contact_method.title()}*")
+        message_parts.append("")
+        message_parts.append("⏰ *Order Time:* " + timezone.now().strftime("%d/%m/%Y %I:%M %p"))
+        message_parts.append("")
+        message_parts.append("Please confirm this order and let me know the delivery details. Thank you! 🙏")
+        
+        # Join message
+        whatsapp_message = "\n".join(message_parts)
+        
+        try:
             # URL encode the message
             encoded_message = urllib.parse.quote(whatsapp_message)
             
             # WhatsApp business number (replace with your actual WhatsApp business number)
-            whatsapp_number = "254712345678"  # Replace with your business WhatsApp number
+            whatsapp_number = getattr(settings, 'WHATSAPP_BUSINESS_NUMBER', "254112284093")
             
             # Generate WhatsApp URL
             whatsapp_url = f"https://wa.me/{whatsapp_number}?text={encoded_message}"
             
-            context = {
-                'whatsapp_url': whatsapp_url,
-                'whatsapp_message': whatsapp_message,
-                'customer_name': customer_name,
-                'customer_phone': customer_phone,
-                'customer_address': customer_address,
-                'customer_notes': customer_notes,
-                'total_amount': total_amount,
-                'cart_items': cart.items.select_related('product').all()
-            }
-            
-            return render(request, 'whatsapp_order.html', context)
-            
+            # Save order to database (optional - for tracking)
+            try:
+                with transaction.atomic():
+                    order = Order.objects.create(
+                        customer=customer,
+                        total_amount=total_amount,
+                        final_amount=total_amount,
+                        whatsapp_message=whatsapp_message,
+                        customer_notes=customer_notes,
+                        delivery_address=customer_address,
+                        delivery_phone=customer_phone,
+                        status='pending'
+                    )
+                    
+                    # Create order items
+                    for item in cart_items:
+                        try:
+                            OrderItem.objects.create(
+                                order=order,
+                                product=item.product,
+                                quantity=item.quantity,
+                                unit_price=item.product.selling_price,
+                                product_name=item.product.name,
+                                product_sku=item.product.sku
+                            )
+                        except Exception as e:
+                            logger.error(f"Error creating order item: {str(e)}")
+                            continue
+                    
+                    logger.info(f"Order {order.order_number} created successfully")
+                    
+            except Exception as e:
+                logger.error(f"Error saving order to database: {str(e)}", exc_info=True)
+                # Continue anyway - WhatsApp message can still be sent
+        
         except Exception as e:
-            logger.error(f"Error generating WhatsApp message: {str(e)}")
-            messages.error(request, 'An error occurred while preparing your order')
+            logger.error(f"Error encoding WhatsApp message: {str(e)}", exc_info=True)
+            messages.error(request, 'Error preparing WhatsApp message')
             return redirect('checkout')
-    
-    return redirect('checkout')
+        
+        context = {
+            'whatsapp_url': whatsapp_url,
+            'whatsapp_message': whatsapp_message,
+            'customer_name': customer_name,
+            'customer_phone': customer_phone,
+            'customer_address': customer_address,
+            'customer_notes': customer_notes,
+            'total_amount': total_amount,
+            'cart_items': cart_items,
+            'order_number': order.order_number if 'order' in locals() else 'N/A'
+        }
+        
+        return render(request, 'whatsapp_order.html', context)
+        
+    except Exception as e:
+        logger.error(f"Error generating WhatsApp message: {str(e)}", exc_info=True)
+        messages.error(request, f'An error occurred while preparing your order: {str(e)}')
+        return redirect('checkout')
 
 def clear_cart(request):
     """Clear the cart after successful order"""
