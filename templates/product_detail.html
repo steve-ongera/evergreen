@@ -6,7 +6,8 @@
 
 {% block meta_description %}{{ product.short_description|default:product.description|truncatewords:30 }}{% endblock %}
 
-{% block extra_css %}
+{% block content %}
+
 <style>
 .product-gallery {
     position: sticky;
@@ -265,27 +266,30 @@
 
 .related-products {
     margin: 50px 0;
+    margin-bottom: 20px;
 }
 
-.product-card {
+.product-item {
     border: 1px solid #eee;
     border-radius: 8px;
-    padding: 15px;
-    text-align: center;
     transition: transform 0.3s, box-shadow 0.3s;
     height: 100%;
     text-decoration: none;
     color: inherit;
+    background: #fff;
+  margin-bottom: 30px;
 }
 
-.product-card:hover {
+
+
+.product-item:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     color: inherit;
     text-decoration: none;
 }
 
-.product-card img {
+.product-item img {
     width: 100%;
     height: 180px;
     object-fit: contain;
@@ -322,9 +326,7 @@
     }
 }
 </style>
-{% endblock %}
 
-{% block content %}
     <!-- Page Header -->
     <div class="container-fluid page-header mb-5 wow fadeIn" data-wow-delay="0.1s">
         <div class="container">
@@ -347,25 +349,27 @@
                 <!-- Product Images -->
                 <div class="col-lg-5">
                     <div class="product-gallery wow fadeInUp" data-wow-delay="0.1s">
-                        <div class="main-image-container zoom-container">
-                            <img id="mainProductImage" class="main-product-image" 
-                                 src="{% if main_image %}{{ main_image.url }}{% else %}{% static 'img/product-placeholder.jpg' %}{% endif %}" 
-                                 alt="{{ product.name }}"
-                                 data-zoom="{% if main_image %}{{ main_image.url }}{% else %}{% static 'img/product-placeholder.jpg' %}{% endif %}">
-                            
-                            {% if savings_percentage > 0 %}
-                            <div class="position-absolute top-0 start-0 m-3">
-                                <span class="discount-badge">-{{ savings_percentage }}%</span>
+                        <div class="product-gallery wow fadeInUp" data-wow-delay="0.1s">
+                          <div class="main-image-container zoom-container">
+                                <img id="mainProductImage" class="main-product-image" 
+                                    src="{% if main_image %}{{ main_image.url }}{% else %}{% static 'img/product-placeholder.jpg' %}{% endif %}" 
+                                    alt="{{ product.name }}"
+                                    data-zoom="{% if main_image %}{{ main_image.url }}{% else %}{% static 'img/product-placeholder.jpg' %}{% endif %}">
+                                    
+                                {% if savings_percentage > 0 %}
+                                <div class="position-absolute top-0 start-0 m-4 py-1 px-3 bg-danger text-white rounded">
+                                    -{{ savings_percentage }}%
+                                </div>
+                                {% endif %}
+                                
+                                {% if product.tags.exists %}
+                                <div class="position-absolute top-0 end-0 m-4">
+                                    {% for tag in product.tags.all %}
+                                    <span class="badge" style="background-color: {{ tag.color }}; margin-left: 5px;">{{ tag.name }}</span>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
                             </div>
-                            {% endif %}
-                            
-                            {% if product.tags.exists %}
-                            <div class="position-absolute top-0 end-0 m-3">
-                                {% for tag in product.tags.all %}
-                                <span class="badge" style="background-color: {{ tag.color }}; margin-left: 5px;">{{ tag.name }}</span>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
                         </div>
                         
                         {% if product_images.count > 1 %}
@@ -714,37 +718,50 @@
                 <h3 class="mb-4">Related Products</h3>
                 <div class="row">
                     {% for related_product in related_products %}
-                    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
-                        <a href="{{ related_product.get_absolute_url }}" class="product-card d-block">
-                            <div class="position-relative">
+                    <div style='border-top: 10px;' class="col-xl-3 col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="{{ forloop.counter0|floatformat:1|add:"0.1" }}s">
+                        <div class="product-item">
+                            <div class="position-relative bg-light overflow-hidden">
                                 <img src="{% if related_product.main_image %}{{ related_product.main_image.url }}{% else %}{% static 'img/product-placeholder.jpg' %}{% endif %}" 
                                      alt="{{ related_product.name }}" class="img-fluid">
                                 {% if related_product.discount_percentage > 0 %}
-                                <span class="position-absolute top-0 start-0 badge bg-danger m-2">
+                                <div class="position-absolute top-0 start-0 m-4 py-1 px-3 bg-danger text-white rounded">
                                     -{{ related_product.discount_percentage }}%
-                                </span>
+                                </div>
                                 {% endif %}
                                 {% if related_product.tags.exists %}
-                                <div class="position-absolute top-0 end-0 m-2">
+                                <div class="position-absolute top-0 end-0 m-4">
                                     {% for tag in related_product.tags.all %}
                                     <span class="badge" style="background-color: {{ tag.color }};">{{ tag.name }}</span>
                                     {% endfor %}
                                 </div>
                                 {% endif %}
                             </div>
-                            <h6 class="mt-3 mb-2">{{ related_product.name|truncatechars:40 }}</h6>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span class="fw-bold text-success">KSh {{ similar_product.selling_price|floatformat:2 }}</span>
-                                    {% if similar_product.discount_price %}
-                                    <small class="text-muted text-decoration-line-through ms-2">
-                                        KSh {{ similar_product.price|floatformat:2 }}
-                                    </small>
+                            <div class="text-center p-4">
+                                <a class="d-block h5 mb-2" href="{{ related_product.get_absolute_url }}">{{ related_product.name }}</a>
+                                <span class="text-primary me-1">KSh {{ related_product.selling_price|floatformat:2 }}</span>
+                                {% if related_product.discount_price %}
+                                <span class="text-body text-decoration-line-through">KSh {{ related_product.price|floatformat:2 }}</span>
+                                {% endif %}
+                                <div class="mt-2">
+                                    <small class="text-muted">{{ related_product.category.name }}</small>
+                                    {% if related_product.brand %}
+                                    <small class="text-muted"> | {{ related_product.brand.name }}</small>
                                     {% endif %}
                                 </div>
-                                <small class="text-muted">{{ similar_product.get_unit_display }}</small>
                             </div>
-                        </a>
+                            <div class="d-flex border-top">
+                                <small class="w-50 text-center border-end py-2">
+                                    <a class="text-body" href="{{ related_product.get_absolute_url }}">
+                                        <i class="fa fa-eye text-primary me-2"></i>View detail
+                                    </a>
+                                </small>
+                                <small class="w-50 text-center py-2">
+                                    <a class="text-body" href="#" onclick="addToCart({{ related_product.id }})">
+                                        <i class="fa fa-shopping-bag text-primary me-2"></i>Add to cart
+                                    </a>
+                                </small>
+                            </div>
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
@@ -757,30 +774,37 @@
                 <h3 class="mb-4">Frequently Bought Together</h3>
                 <div class="row">
                     {% for freq_product in frequently_bought %}
-                    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
-                        <a href="{{ freq_product.get_absolute_url }}" class="product-card d-block">
-                            <div class="position-relative">
+                    <div class="col-xl-3 col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="{{ forloop.counter0|floatformat:1|add:"0.1" }}s">
+                        <div class="product-item">
+                            <div class="position-relative bg-light overflow-hidden">
                                 <img src="{% if freq_product.main_image %}{{ freq_product.main_image.url }}{% else %}{% static 'img/product-placeholder.jpg' %}{% endif %}" 
                                      alt="{{ freq_product.name }}" class="img-fluid">
                                 {% if freq_product.discount_percentage > 0 %}
-                                <span class="position-absolute top-0 start-0 badge bg-danger m-2">
+                                <div class="position-absolute top-0 start-0 m-4 py-1 px-3 bg-danger text-white rounded">
                                     -{{ freq_product.discount_percentage }}%
-                                </span>
+                                </div>
                                 {% endif %}
                             </div>
-                            <h6 class="mt-3 mb-2">{{ freq_product.name|truncatechars:40 }}</h6>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span class="fw-bold text-success">KSh {{ freq_product.selling_price|floatformat:2 }}</span>
-                                    {% if freq_product.discount_price %}
-                                    <small class="text-muted text-decoration-line-through ms-2">
-                                        KSh {{ freq_product.price|floatformat:2 }}
-                                    </small>
-                                    {% endif %}
-                                </div>
-                                <small class="text-muted">{{ freq_product.get_unit_display }}</small>
+                            <div class="text-center p-4">
+                                <a class="d-block h5 mb-2" href="{{ freq_product.get_absolute_url }}">{{ freq_product.name }}</a>
+                                <span class="text-primary me-1">KSh {{ freq_product.selling_price|floatformat:2 }}</span>
+                                {% if freq_product.discount_price %}
+                                <span class="text-body text-decoration-line-through">KSh {{ freq_product.price|floatformat:2 }}</span>
+                                {% endif %}
                             </div>
-                        </a>
+                            <div class="d-flex border-top">
+                                <small class="w-50 text-center border-end py-2">
+                                    <a class="text-body" href="{{ freq_product.get_absolute_url }}">
+                                        <i class="fa fa-eye text-primary me-2"></i>View detail
+                                    </a>
+                                </small>
+                                <small class="w-50 text-center py-2">
+                                    <a class="text-body" href="#" onclick="addToCart({{ freq_product.id }})">
+                                        <i class="fa fa-shopping-bag text-primary me-2"></i>Add to cart
+                                    </a>
+                                </small>
+                            </div>
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
@@ -793,30 +817,37 @@
                 <h3 class="mb-4">Recently Viewed</h3>
                 <div class="row">
                     {% for recent_product in recently_viewed %}
-                    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
-                        <a href="{{ recent_product.get_absolute_url }}" class="product-card d-block">
-                            <div class="position-relative">
+                    <div class="col-xl-3 col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="{{ forloop.counter0|floatformat:1|add:"0.1" }}s">
+                        <div class="product-item">
+                            <div class="position-relative bg-light overflow-hidden">
                                 <img src="{% if recent_product.main_image %}{{ recent_product.main_image.url }}{% else %}{% static 'img/product-placeholder.jpg' %}{% endif %}" 
                                      alt="{{ recent_product.name }}" class="img-fluid">
                                 {% if recent_product.discount_percentage > 0 %}
-                                <span class="position-absolute top-0 start-0 badge bg-danger m-2">
+                                <div class="position-absolute top-0 start-0 m-4 py-1 px-3 bg-danger text-white rounded">
                                     -{{ recent_product.discount_percentage }}%
-                                </span>
+                                </div>
                                 {% endif %}
                             </div>
-                            <h6 class="mt-3 mb-2">{{ recent_product.name|truncatechars:40 }}</h6>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span class="fw-bold text-success">KSh {{ recent_product.selling_price|floatformat:2 }}</span>
-                                    {% if recent_product.discount_price %}
-                                    <small class="text-muted text-decoration-line-through ms-2">
-                                        KSh {{ recent_product.price|floatformat:2 }}
-                                    </small>
-                                    {% endif %}
-                                </div>
-                                <small class="text-muted">{{ recent_product.get_unit_display }}</small>
+                            <div class="text-center p-4">
+                                <a class="d-block h5 mb-2" href="{{ recent_product.get_absolute_url }}">{{ recent_product.name }}</a>
+                                <span class="text-primary me-1">KSh {{ recent_product.selling_price|floatformat:2 }}</span>
+                                {% if recent_product.discount_price %}
+                                <span class="text-body text-decoration-line-through">KSh {{ recent_product.price|floatformat:2 }}</span>
+                                {% endif %}
                             </div>
-                        </a>
+                            <div class="d-flex border-top">
+                                <small class="w-50 text-center border-end py-2">
+                                    <a class="text-body" href="{{ recent_product.get_absolute_url }}">
+                                        <i class="fa fa-eye text-primary me-2"></i>View detail
+                                    </a>
+                                </small>
+                                <small class="w-50 text-center py-2">
+                                    <a class="text-body" href="#" onclick="addToCart({{ recent_product.id }})">
+                                        <i class="fa fa-shopping-bag text-primary me-2"></i>Add to cart
+                                    </a>
+                                </small>
+                            </div>
+                        </div>
                     </div>
                     {% endfor %}
                 </div>

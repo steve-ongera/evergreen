@@ -66,15 +66,16 @@ def index(request):
     
     return render(request, 'home.html', context)
 
-
 from django.shortcuts import render
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
 from .models import Product, Category, SubCategory, Brand, Tag
-
+from django.db.models import Max, Min
+from django.db import models
 
 def product_list(request):
     """Product listing page with filtering and pagination matching HTML theme"""
+    # Start with all active products
     products = Product.objects.filter(is_active=True).select_related(
         'category', 'subcategory', 'brand'
     ).prefetch_related('images', 'tags')
@@ -91,7 +92,13 @@ def product_list(request):
     is_organic = request.GET.get('organic')
     stock_status = request.GET.get('stock')
     
-    # Apply filters
+    # Check if any filters are applied
+    has_filters = any([
+        category_slug, subcategory_slug, brand_slug, tag_slug, 
+        search_query, min_price, max_price, is_organic, stock_status
+    ])
+    
+    # Apply filters only if they exist
     if category_slug:
         products = products.filter(category__slug=category_slug)
     
@@ -110,14 +117,22 @@ def product_list(request):
             Q(description__icontains=search_query) |
             Q(short_description__icontains=search_query) |
             Q(category__name__icontains=search_query) |
-            Q(subcategory__name__icontains=search_query)
-        )
+            Q(subcategory__name__icontains=search_query) |
+            Q(brand__name__icontains=search_query) |
+            Q(tags__name__icontains=search_query)
+        ).distinct()
     
     if min_price:
-        products = products.filter(price__gte=min_price)
+        try:
+            products = products.filter(price__gte=float(min_price))
+        except (ValueError, TypeError):
+            pass  # Ignore invalid price values
     
     if max_price:
-        products = products.filter(price__lte=max_price)
+        try:
+            products = products.filter(price__lte=float(max_price))
+        except (ValueError, TypeError):
+            pass  # Ignore invalid price values
     
     if is_organic:
         products = products.filter(is_organic=True)
@@ -128,58 +143,94 @@ def product_list(request):
     # Apply sorting
     sort_options = {
         'name': 'name',
+        'name_desc': '-name',
         'price_low': 'price',
         'price_high': '-price',
         'newest': '-created_at',
+        'oldest': 'created_at',
         'featured': '-is_featured',
-        'rating': '-reviews__rating',
+        'rating': '-id',  # Placeholder for rating sort (implement when reviews are ready)
+        'stock_high': '-stock_quantity',
+        'stock_low': 'stock_quantity',
     }
     
     if sort_by in sort_options:
         products = products.order_by(sort_options[sort_by])
+    else:
+        # Default sorting: featured first, then newest
+        products = products.order_by('-is_featured', '-created_at')
     
-    # Get active categories for tabs (limit to first 3 for the theme)
+    # Get active categories for tabs (showing all categories, not just first 3)
     categories = Category.objects.filter(is_active=True).annotate(
         product_count=Count('products', filter=Q(products__is_active=True))
-    )[:3]
+    ).filter(product_count__gt=0)  # Only show categories with products
     
-    # Get products grouped by category for tabs
+    # For the tabbed view, we'll show products by category
     category_products = {}
-    for category in categories:
-        cat_products = products.filter(category=category)
-        # Paginate each category (8 products per tab as shown in HTML)
-        paginator = Paginator(cat_products, 8)
-        page_number = request.GET.get(f'page_{category.slug}', 1)
-        category_products[category.slug] = paginator.get_page(page_number)
     
-    # Get all products for general pagination
-    paginator = Paginator(products, 12)
-    page_number = request.GET.get('page')
+    # If no filters are applied, show products grouped by category for tabs
+    if not has_filters:
+        # Get all products for "All Products" tab (limit to 8 for tab display)
+        all_products_for_tab = Product.objects.filter(
+            is_active=True
+        ).select_related('category', 'subcategory', 'brand').prefetch_related('images', 'tags')
+        
+        # Apply default sorting for "All Products" tab
+        all_products_for_tab = all_products_for_tab.order_by('-is_featured', '-created_at')[:8]
+        category_products['all'] = all_products_for_tab
+        
+        for category in categories:
+            # Get products for this category (limit to 8 for tab display)
+            cat_products = Product.objects.filter(
+                category=category, is_active=True
+            ).select_related('category', 'subcategory', 'brand').prefetch_related('images', 'tags')
+            
+            # Apply default sorting for category tabs
+            cat_products = cat_products.order_by('-is_featured', '-created_at')[:8]
+            category_products[category.slug] = cat_products
+    else:
+        # If filters are applied, group filtered products by category
+        # Also include "All Products" tab with filtered results
+        category_products['all'] = products[:8]
+        
+        for category in categories:
+            cat_products = products.filter(category=category)[:8]
+            category_products[category.slug] = cat_products
+    
+    # Pagination for all products view
+    paginator = Paginator(products, 12)  # 12 products per page
+    page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
     
-    # Get filter options for sidebar/filtering
+    # Get filter options for sidebar/filtering (only items with products)
     all_categories = Category.objects.filter(is_active=True).annotate(
         product_count=Count('products', filter=Q(products__is_active=True))
-    )
+    ).filter(product_count__gt=0)
     
     subcategories = SubCategory.objects.filter(is_active=True).annotate(
         product_count=Count('products', filter=Q(products__is_active=True))
-    )
+    ).filter(product_count__gt=0)
     
     brands = Brand.objects.filter(is_active=True).annotate(
         product_count=Count('products', filter=Q(products__is_active=True))
-    )
+    ).filter(product_count__gt=0)
     
     tags = Tag.objects.filter(is_active=True).annotate(
         product_count=Count('products', filter=Q(products__is_active=True))
+    ).filter(product_count__gt=0)
+    
+    # Price range for filter (get min and max from all products)
+    price_range = Product.objects.filter(is_active=True).aggregate(
+        min_price=models.Min('price'),
+        max_price=models.Max('price')
     )
     
     context = {
         'page_obj': page_obj,
         'products': page_obj,
-        'categories': categories,  # For tabs (first 3)
-        'all_categories': all_categories,  # For filtering
-        'category_products': category_products,  # Products grouped by category for tabs
+        'categories': categories,  # For tabs
+        'all_categories': all_categories,  # For filtering sidebar
+        'category_products': category_products,  # Products grouped by category for tabs (including 'all')
         'subcategories': subcategories,
         'brands': brands,
         'tags': tags,
@@ -193,10 +244,33 @@ def product_list(request):
         'stock_status': stock_status,
         'min_price': min_price,
         'max_price': max_price,
+        'has_filters': has_filters,  # To determine view mode in template
+        'price_range': price_range,  # For price range filter
+        'total_products': products.count(),  # Total count for display
+        
+        # Sort options for dropdown
+        'sort_options': [
+            ('name', 'Name A-Z'),
+            ('name_desc', 'Name Z-A'),
+            ('price_low', 'Price: Low to High'),
+            ('price_high', 'Price: High to Low'),
+            ('newest', 'Newest First'),
+            ('oldest', 'Oldest First'),
+            ('featured', 'Featured First'),
+            ('stock_high', 'Stock: High to Low'),
+            ('stock_low', 'Stock: Low to High'),
+        ],
+        
+        # Stock status options for filter
+        'stock_options': [
+            ('in_stock', 'In Stock'),
+            ('low_stock', 'Low Stock'),
+            ('out_of_stock', 'Out of Stock'),
+            ('pre_order', 'Pre-Order'),
+        ],
     }
     
     return render(request, 'product_list.html', context)
-
 
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Avg, Count, Q
