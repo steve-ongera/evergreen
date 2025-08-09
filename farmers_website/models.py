@@ -488,11 +488,18 @@ class Newsletter(models.Model):
 
 
 class ContactMessage(models.Model):
+    SUBJECT_CHOICES = [
+        ('General Inquiry', 'General Inquiry'),
+        ('Product Information', 'Product Information'),
+        ('Order Inquiry', 'Order Inquiry'),
+        ('Technical Support', 'Technical Support'),
+        ('Partnership', 'Partnership'),
+    ]
     """Contact form messages"""
     name = models.CharField(max_length=100)
     email = models.EmailField()
     phone = models.CharField(max_length=15, blank=True)
-    subject = models.CharField(max_length=200)
+    subject = models.CharField(max_length=50, choices=SUBJECT_CHOICES)
     message = models.TextField()
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

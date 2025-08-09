@@ -22,4 +22,6 @@ urlpatterns = [
     path('products/<slug:slug>/reviews/', views.product_reviews, name='product_reviews'),
     path('products/<slug:slug>/reviews/submit/', views.submit_product_review, name='submit_product_review'),
     path('products/<slug:slug>/reviews/stats/', views.get_review_stats, name='review_stats'),
+    path('contact/', views.contact_view, name='contact'),
+    path('about-us/', views.about_us_view, name='about_us'),
 ]
