@@ -53,101 +53,7 @@
     </div>
     <!-- Carousel End -->
 
-
-    <!-- About Start -->
-    <div class="container-xxl py-5">
-        <div class="container">
-            <div class="row g-5 align-items-center">
-                <div class="col-lg-6 wow fadeIn" data-wow-delay="0.1s">
-                    <div class="about-img position-relative overflow-hidden p-5 pe-0">
-                        <img class="img-fluid w-100" src="{% static 'img/about.jpg'%}">
-                    </div>
-                </div>
-                <div class="col-lg-6 wow fadeIn" data-wow-delay="0.5s">
-                    <h1 class="display-5 mb-4">Best Organic Fruits And Vegetables</h1>
-                    <p class="mb-4">Tempor erat elitr rebum at clita. Diam dolor diam ipsum sit. Aliqu diam amet diam et eos. Clita erat ipsum et lorem et sit, sed stet lorem sit clita duo justo magna dolore erat amet</p>
-                    <p><i class="fa fa-check text-primary me-3"></i>Tempor erat elitr rebum at clita</p>
-                    <p><i class="fa fa-check text-primary me-3"></i>Aliqu diam amet diam et eos</p>
-                    <p><i class="fa fa-check text-primary me-3"></i>Clita duo justo magna dolore erat amet</p>
-                    <a class="btn btn-primary rounded-pill py-3 px-5 mt-3" href="">Read More</a>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- About End -->
-
-
-    <!-- Feature Start -->
-    <div class="container-fluid bg-light bg-icon my-5 py-6">
-        <div class="container">
-            <div class="section-header text-center mx-auto mb-5 wow fadeInUp" data-wow-delay="0.1s" style="max-width: 500px;">
-                <h1 class="display-5 mb-3">Our Features</h1>
-                <p>Tempor ut dolore lorem kasd vero ipsum sit eirmod sit. Ipsum diam justo sed rebum vero dolor duo.</p>
-            </div>
-            <div class="row g-4">
-                <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="0.1s">
-                    <div class="bg-white text-center h-100 p-4 p-xl-5">
-                        <img class="img-fluid mb-4" src="img/icon-1.png" alt="">
-                        <h4 class="mb-3">Natural Process</h4>
-                        <p class="mb-4">Tempor ut dolore lorem kasd vero ipsum sit eirmod sit. Ipsum diam justo sed vero dolor duo.</p>
-                        <a class="btn btn-outline-primary border-2 py-2 px-4 rounded-pill" href="">Read More</a>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="0.3s">
-                    <div class="bg-white text-center h-100 p-4 p-xl-5">
-                        <img class="img-fluid mb-4" src="img/icon-2.png" alt="">
-                        <h4 class="mb-3">Organic Products</h4>
-                        <p class="mb-4">Tempor ut dolore lorem kasd vero ipsum sit eirmod sit. Ipsum diam justo sed vero dolor duo.</p>
-                        <a class="btn btn-outline-primary border-2 py-2 px-4 rounded-pill" href="">Read More</a>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="0.5s">
-                    <div class="bg-white text-center h-100 p-4 p-xl-5">
-                        <img class="img-fluid mb-4" src="img/icon-3.png" alt="">
-                        <h4 class="mb-3">Biologically Safe</h4>
-                        <p class="mb-4">Tempor ut dolore lorem kasd vero ipsum sit eirmod sit. Ipsum diam justo sed vero dolor duo.</p>
-                        <a class="btn btn-outline-primary border-2 py-2 px-4 rounded-pill" href="">Read More</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Feature End -->
-
-<!-- Categories Section Start -->
-<section id="categories" class="container-xxl py-5">
-    <div class="container">
-        <div class="text-center mb-5">
-            <h2 class="display-5 mb-3">Shop by Category</h2>
-            <p class="lead text-muted">Explore our wide range of agricultural products</p>
-        </div>
-        <div class="row g-4">
-            {% for category in categories %}
-            <div class="col-lg-3 col-md-6">
-                <div class="card category-card h-100 border-0 shadow-sm transition-all">
-                    <div class="card-body text-center p-4">
-                        {% if category.image %}
-                        <img src="{{ category.image.url }}" alt="{{ category.name }}" class="img-fluid mb-3" style="height: 80px; width: 80px; object-fit: cover; border-radius: 50%;">
-                        {% else %}
-                        <div class="bg-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="height: 80px; width: 80px;">
-                            <i class="fas fa-leaf text-white fs-2"></i>
-                        </div>
-                        {% endif %}
-                        <h5 class="card-title">{{ category.name }}</h5>
-                        <p class="card-text text-muted small">{{ category.product_count }} products</p>
-                        <a href="{% url 'category_products' category.slug %}" class="btn btn-outline-success rounded-pill">
-                            Explore <i class="fas fa-arrow-right ms-1"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-</section>
-<!-- Categories Section End -->
-
-<!-- Featured Products Start -->
+<!-- Featured Products Start - Moved to be immediately after banner -->
 <section class="container-xxl py-5 bg-light">
     <div class="container">
         <div class="text-center mb-5">
@@ -231,6 +137,99 @@
     </div>
 </section>
 <!-- Featured Products End -->
+
+<!-- About Start -->
+    <div class="container-xxl py-5">
+        <div class="container">
+            <div class="row g-5 align-items-center">
+                <div class="col-lg-6 wow fadeIn" data-wow-delay="0.1s">
+                    <div class="about-img position-relative overflow-hidden p-5 pe-0">
+                        <img class="img-fluid w-100" src="{% static 'img/about.jpg'%}">
+                    </div>
+                </div>
+                <div class="col-lg-6 wow fadeIn" data-wow-delay="0.5s">
+                    <h1 class="display-5 mb-4">Premium Organic Fruits & Vegetables</h1>
+                    <p class="mb-4">Discover nature's finest selection of organically grown produce, carefully sourced from trusted farmers who share our commitment to sustainable agriculture. Our extensive range ensures you receive only the freshest, most nutritious fruits and vegetables, delivered straight to your doorstep with convenience and care.</p>
+                    <p><i class="fa fa-check text-primary me-3"></i>Certified organic produce from verified farms</p>
+                    <p><i class="fa fa-check text-primary me-3"></i>Fresh delivery within 24 hours of harvest</p>
+                    <p><i class="fa fa-check text-primary me-3"></i>Sustainable farming practices supporting local communities</p>
+                    <a class="btn btn-primary rounded-pill py-3 px-5 mt-3" href="">Discover More</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- About End -->
+
+
+    <!-- Feature Start -->
+    <div class="container-fluid bg-light bg-icon my-5 py-6">
+        <div class="container">
+            <div class="section-header text-center mx-auto mb-5 wow fadeInUp" data-wow-delay="0.1s" style="max-width: 500px;">
+                <h1 class="display-5 mb-3">Why Choose Evergreen</h1>
+                <p>Experience the difference with our commitment to quality, sustainability, and exceptional service that sets us apart in the organic marketplace.</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="0.1s">
+                    <div class="bg-white text-center h-100 p-4 p-xl-5">
+                        <img class="img-fluid mb-4" src="img/icon-1.png" alt="">
+                        <h4 class="mb-3">Natural Growing Process</h4>
+                        <p class="mb-4">Our farmers employ time-honoured, natural cultivation methods without harmful pesticides or chemicals, ensuring every product maintains its authentic flavour and nutritional value.</p>
+                        <a class="btn btn-outline-primary border-2 py-2 px-4 rounded-pill" href="">Learn More</a>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="0.3s">
+                    <div class="bg-white text-center h-100 p-4 p-xl-5">
+                        <img class="img-fluid mb-4" src="img/icon-2.png" alt="">
+                        <h4 class="mb-3">Certified Organic Products</h4>
+                        <p class="mb-4">All our produce carries official organic certification, guaranteeing that from seed to shelf, every item meets the highest standards of organic agriculture and environmental responsibility.</p>
+                        <a class="btn btn-outline-primary border-2 py-2 px-4 rounded-pill" href="">Learn More</a>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="0.5s">
+                    <div class="bg-white text-center h-100 p-4 p-xl-5">
+                        <img class="img-fluid mb-4" src="img/icon-3.png" alt="">
+                        <h4 class="mb-3">Environmentally Safe</h4>
+                        <p class="mb-4">Our sustainable farming practices protect biodiversity, preserve soil health, and reduce environmental impact whilst delivering produce that's safe for you and your family.</p>
+                        <a class="btn btn-outline-primary border-2 py-2 px-4 rounded-pill" href="">Learn More</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Feature End -->
+
+<!-- Categories Section Start -->
+<section id="categories" class="container-xxl py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5 mb-3">Shop by Category</h2>
+            <p class="lead text-muted">Explore our wide range of agricultural products</p>
+        </div>
+        <div class="row g-4">
+            {% for category in categories %}
+            <div class="col-lg-3 col-md-6">
+                <div class="card category-card h-100 border-0 shadow-sm transition-all">
+                    <div class="card-body text-center p-4">
+                        {% if category.image %}
+                        <img src="{{ category.image.url }}" alt="{{ category.name }}" class="img-fluid mb-3" style="height: 80px; width: 80px; object-fit: cover; border-radius: 50%;">
+                        {% else %}
+                        <div class="bg-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="height: 80px; width: 80px;">
+                            <i class="fas fa-leaf text-white fs-2"></i>
+                        </div>
+                        {% endif %}
+                        <h5 class="card-title">{{ category.name }}</h5>
+                        <p class="card-text text-muted small">{{ category.product_count }} products</p>
+                        <a href="{% url 'category_products' category.slug %}" class="btn btn-outline-success rounded-pill">
+                            Explore <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+<!-- Categories Section End -->
 
 <!-- Product Tabs Start -->
 <section class="container-xxl py-5">
