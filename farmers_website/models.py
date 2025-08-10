@@ -445,16 +445,31 @@ class Cart(models.Model):
 
     def __str__(self):
         return f"Cart {self.session_id}"
-
-    @property
-    def total_amount(self):
-        return self.items.aggregate(
-            total=models.Sum(models.F('quantity') * models.F('product__price'))
-        )['total'] or 0
-
+    
     @property
     def total_items(self):
-        return self.items.aggregate(total=models.Sum('quantity'))['total'] or 0
+        """Return total number of items in cart"""
+        return self.cartitem_set.aggregate(
+            total=models.Sum('quantity')
+        )['total'] or 0
+    
+    @property
+    def total_amount(self):
+        """Return total amount of cart"""
+        return sum(
+            item.quantity * item.product.price 
+            for item in self.cartitem_set.all()
+        )
+
+    # @property
+    # def total_amount(self):
+    #     return self.items.aggregate(
+    #         total=models.Sum(models.F('quantity') * models.F('product__price'))
+    #     )['total'] or 0
+
+    # @property
+    # def total_items(self):
+    #     return self.items.aggregate(total=models.Sum('quantity'))['total'] or 0
 
 
 class CartItem(models.Model):

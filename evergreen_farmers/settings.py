@@ -50,7 +50,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'farmers_website.views.cart_context_processor',
+                #'farmers_website.views.cart_context_processor',
                 'farmers_website.context_processors.categories',  
                 'farmers_website.context_processors.cart_context',  
             ],
@@ -123,6 +123,10 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 STATIC_ROOT = BASE_DIR / "staticfiles"  # where collectstatic will gather files
 
+# settings.py
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # or your preferred backend
+SESSION_COOKIE_AGE = 86400  # 24 hours
+SESSION_SAVE_EVERY_REQUEST = True
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

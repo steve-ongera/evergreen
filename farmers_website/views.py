@@ -1219,26 +1219,6 @@ def clear_cart(request):
         
     return redirect('product_list')
 
-# Context processor to add cart data to all templates
-def cart_context_processor(request):
-    """Add cart information to all template contexts"""
-    cart_total = 0
-    cart_amount = 0.0
-    
-    try:
-        if request.session.session_key:
-            cart = Cart.objects.get(session_id=request.session.session_key)
-            cart_total = cart.total_items
-            cart_amount = float(cart.total_amount)
-    except Cart.DoesNotExist:
-        pass
-    except Exception as e:
-        logger.error(f"Error in cart context processor: {str(e)}")
-    
-    return {
-        'cart_total': cart_total,
-        'cart_amount': cart_amount
-    }
 
 
 
