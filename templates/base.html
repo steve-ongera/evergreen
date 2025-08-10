@@ -4,13 +4,13 @@
 
 <head>
     <meta charset="utf-8">
-    <title>{% block title %}Evergreen - Organic Food Website{% endblock %}</title>
+    <title>{% block title %}Evergreen - Kenya's Leading Organic Food Ecommerce | Fresh Groceries Online{% endblock %}</title>
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <meta content="{% block meta_keywords %}{% endblock %}" name="keywords">
-    <meta content="{% block meta_description %}{% endblock %}" name="description">
+    <meta content="{% block meta_keywords %}evergreen ecommerce, online shopping Kenya, organic food delivery Nairobi, East Africa ecommerce, buy groceries online Kenya, fresh produce delivery, Kenyan online supermarket, organic food store Tanzania, Uganda online shopping, Rwanda ecommerce, healthy food delivery, farm to table Kenya, natural foods East Africa, African organic products, best online grocery Kenya, Nairobi food delivery, Mombasa online shopping, Kisumu organic store, Dar es Salaam ecommerce, Kampala grocery delivery{% endblock %}" name="keywords">
+    <meta content="{% block meta_description %}Evergreen is Kenya's premier organic food ecommerce platform serving East Africa. Shop fresh groceries, organic produce, and healthy foods online with fast delivery in Nairobi, Mombasa, Kampala, Dar es Salaam and across the region.{% endblock %}" name="description">
 
     <!-- Favicon -->
-    <link href="{% static 'img/favicon.ico' %}" rel="icon">
+    <link href="{% static 'img/logo.jpg' %}" rel="icon">
 
     <!-- Google Web Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -33,6 +33,25 @@
 
     <!-- Additional CSS -->
     {% block extra_css %}{% endblock %}
+
+    <!-- Schema.org markup for Google -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "OnlineStore",
+      "name": "Evergreen Organic Foods",
+      "url": "https://www.yourwebsite.com",
+      "description": "Kenya's leading online organic food store serving East Africa with fresh produce delivery",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Nairobi",
+        "addressRegion": "Nairobi",
+        "addressCountry": "Kenya"
+      },
+      "openingHours": "Mo,Tu,We,Th,Fr,Sa,Su 07:00-20:00",
+      "telephone": "+254XXXXXXXXX"
+    }
+    </script>
 </head>
 
 <body>
