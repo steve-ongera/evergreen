@@ -454,52 +454,156 @@ def product_reviews(request, slug):
     })
 
 
-def category_products(request, slug):
-    """Products by category"""
-    category = get_object_or_404(Category, slug=slug, is_active=True)
+from django.shortcuts import render, get_object_or_404
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db.models import Q, Count
+from .models import Category, Product, Brand, Tag
+
+
+def category_products_view(request, category_slug):
+    """
+    View to display products in a specific category with search and pagination
+    """
+    # Get the category
+    category = get_object_or_404(Category, slug=category_slug, is_active=True)
     
+    # Base queryset - products in this category
     products = Product.objects.filter(
-        category=category,
+        category=category, 
         is_active=True
-    ).select_related('category', 'subcategory', 'brand').prefetch_related('images', 'tags')
+    ).select_related('category', 'subcategory', 'brand').prefetch_related('tags', 'images')
     
-    # Apply additional filters
-    subcategory_slug = request.GET.get('subcategory')
-    if subcategory_slug:
-        products = products.filter(subcategory__slug=subcategory_slug)
+    # Search functionality
+    search_query = request.GET.get('q', '').strip()
+    if search_query:
+        products = products.filter(
+            Q(name__icontains=search_query) |
+            Q(description__icontains=search_query) |
+            Q(short_description__icontains=search_query) |
+            Q(tags__name__icontains=search_query)
+        ).distinct()
+    
+    # Brand filtering
+    current_brand = request.GET.get('brand', '')
+    if current_brand:
+        products = products.filter(brand__slug=current_brand)
+    
+    # Subcategory filtering
+    current_subcategory = request.GET.get('subcategory', '')
+    if current_subcategory:
+        products = products.filter(subcategory__slug=current_subcategory)
+    
+    # Tag filtering
+    current_tag = request.GET.get('tag', '')
+    if current_tag:
+        products = products.filter(tags__slug=current_tag)
+    
+    # Price range filtering
+    min_price = request.GET.get('min_price', '')
+    max_price = request.GET.get('max_price', '')
+    if min_price:
+        try:
+            products = products.filter(price__gte=float(min_price))
+        except ValueError:
+            pass
+    if max_price:
+        try:
+            products = products.filter(price__lte=float(max_price))
+        except ValueError:
+            pass
+    
+    # Stock status filtering
+    stock_status = request.GET.get('stock_status', '')
+    if stock_status:
+        products = products.filter(stock_status=stock_status)
     
     # Sorting
     sort_by = request.GET.get('sort', 'name')
-    sort_options = {
-        'name': 'name',
-        'price_low': 'price',
-        'price_high': '-price',
-        'newest': '-created_at',
-    }
+    sort_options = [
+        ('name', 'Name A-Z'),
+        ('-name', 'Name Z-A'),
+        ('price', 'Price: Low to High'),
+        ('-price', 'Price: High to Low'),
+        ('-created_at', 'Newest First'),
+        ('created_at', 'Oldest First'),
+        ('-is_featured', 'Featured First'),
+    ]
     
-    if sort_by in sort_options:
-        products = products.order_by(sort_options[sort_by])
+    if sort_by in [opt[0] for opt in sort_options]:
+        products = products.order_by(sort_by)
+    else:
+        products = products.order_by('name')
+    
+    # Get filter options for the sidebar
+    brands = Brand.objects.filter(
+        products__category=category, 
+        is_active=True
+    ).annotate(
+        product_count=Count('products', filter=Q(products__is_active=True))
+    ).distinct().order_by('name')
+    
+    subcategories = category.subcategories.filter(
+        is_active=True
+    ).annotate(
+        product_count=Count('products', filter=Q(products__is_active=True))
+    ).order_by('name')
+    
+    tags = Tag.objects.filter(
+        products__category=category, 
+        is_active=True
+    ).annotate(
+        product_count=Count('products', filter=Q(products__is_active=True))
+    ).distinct().order_by('name')
     
     # Pagination
-    paginator = Paginator(products, 12)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    items_per_page = request.GET.get('per_page', 12)
+    try:
+        items_per_page = int(items_per_page)
+        if items_per_page not in [12, 24, 48, 96]:
+            items_per_page = 12
+    except (ValueError, TypeError):
+        items_per_page = 12
     
-    # Get subcategories for this category
-    subcategories = category.subcategories.filter(is_active=True).annotate(
-        product_count=Count('products', filter=Q(products__is_active=True))
+    paginator = Paginator(products, items_per_page)
+    page = request.GET.get('page', 1)
+    
+    try:
+        page_obj = paginator.page(page)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+    
+    # Check if filters are applied
+    has_filters = bool(
+        search_query or current_brand or current_subcategory or 
+        current_tag or min_price or max_price or stock_status
     )
     
     context = {
         'category': category,
         'page_obj': page_obj,
         'products': page_obj,
-        'subcategories': subcategories,
-        'current_subcategory': subcategory_slug,
+        'search_query': search_query,
+        'current_brand': current_brand,
+        'current_subcategory': current_subcategory,
+        'current_tag': current_tag,
+        'min_price': min_price,
+        'max_price': max_price,
+        'stock_status': stock_status,
         'sort_by': sort_by,
+        'sort_options': sort_options,
+        'brands': brands,
+        'subcategories': subcategories,
+        'tags': tags,
+        'has_filters': has_filters,
+        'total_products': paginator.count,
+        'items_per_page': items_per_page,
+        'per_page_options': [12, 24, 48, 96],
+        'stock_status_choices': Product.STOCK_STATUS_CHOICES,
     }
     
-    return render(request, 'products/category_products.html', context)
+    return render(request, 'category_products.html', context)
 
 
 def search_products(request):

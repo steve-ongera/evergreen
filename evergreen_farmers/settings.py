@@ -12,7 +12,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-q4t6*#q^zqhn@bu=v=hv(f9n^opsredzs8lt7-vfe_(rcm(#a7'
 
-DEBUG = False
+DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 # Application definition
@@ -51,6 +51,8 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'farmers_website.views.cart_context_processor',
+                'farmers_website.context_processors.categories',  
+                'farmers_website.context_processors.cart_context',  
             ],
         },
     },
