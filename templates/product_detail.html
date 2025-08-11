@@ -333,7 +333,7 @@
             <nav aria-label="breadcrumb animated slideInDown">
                 <ol class="breadcrumb mb-0">
                     <li class="breadcrumb-item"><a class="text-body" href="{% url 'product_list' %}">Products</a></li>
-                    <li class="breadcrumb-item"><a class="text-body" href="{% url 'product_list' %}?category={{ product.category.slug }}">{{ product.category.name }}</a></li>
+                    <li class="breadcrumb-item"><a class="text-body" href="{% url 'category_products' product.category.slug %}">{{ product.category.name }}</a></li>
                     {% if product.subcategory %}
                     <li class="breadcrumb-item"><a class="text-body" href="{% url 'product_list' %}?subcategory={{ product.subcategory.slug }}">{{ product.subcategory.name }}</a></li>
                     {% endif %}

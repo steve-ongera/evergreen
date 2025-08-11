@@ -176,7 +176,7 @@ def product_list(request):
         ).select_related('category', 'subcategory', 'brand').prefetch_related('images', 'tags')
         
         # Apply default sorting for "All Products" tab
-        all_products_for_tab = all_products_for_tab.order_by('-is_featured', '-created_at')[:8]
+        all_products_for_tab = all_products_for_tab.order_by('-is_featured', '-created_at') #[:8]
         category_products['all'] = all_products_for_tab
         
         for category in categories:
@@ -1603,9 +1603,10 @@ def contact_view(request):
 def about_us_view(request):
     return render(request, 'about.html')
 
-def custom_404_view(request, exception):
+from django.shortcuts import render
+
+def custom_page_not_found(request, exception):
     return render(request, '404.html', status=404)
 
-
-def custom_500_view(request):
+def custom_server_error(request):
     return render(request, '500.html', status=500)

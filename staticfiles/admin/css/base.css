@@ -5,9 +5,9 @@
 /* VARIABLE DEFINITIONS */
 html[data-theme="light"],
 :root {
-    --primary: #79aec8;
-    --secondary: #417690;
-    --accent: #f5dd5d;
+    --primary: #075e54;
+    --secondary: #128c7e;
+    --accent: white;
     --primary-fg: #fff;
 
     --body-fg: #333;
@@ -26,7 +26,7 @@ html[data-theme="light"],
     --breadcrumbs-bg: #264b5d;
 
     --link-fg: #417893;
-    --link-hover-color: #036;
+    --link-hover-color: #0d62c9;
     --link-selected-fg: var(--secondary);
 
     --hairline-color: #e8e8e8;
@@ -148,7 +148,7 @@ h1,h2,h3,h4,h5 {
 
 h1 {
     margin: 0 0 20px;
-    font-weight: 300;
+    font-weight: 600;
     font-size: 1.25rem;
 }
 
