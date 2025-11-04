@@ -28,6 +28,8 @@ INSTALLED_APPS = [
     'farmers_website',
 ]
 
+CRSF_TRUSTED_ORIGINS = ['https://b31ee9188137.ngrok-free.app']
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
