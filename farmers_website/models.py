@@ -449,16 +449,18 @@ class Cart(models.Model):
     @property
     def total_items(self):
         """Return total number of items in cart"""
-        return self.cartitem_set.aggregate(
+        # Change cartitem_set to items
+        return self.items.aggregate(
             total=models.Sum('quantity')
         )['total'] or 0
     
     @property
     def total_amount(self):
         """Return total amount of cart"""
+        # Change cartitem_set to items
         return sum(
-            item.quantity * item.product.price 
-            for item in self.cartitem_set.all()
+            item.quantity * item.product.selling_price  # Use selling_price instead of price
+            for item in self.items.all()
         )
 
     # @property
