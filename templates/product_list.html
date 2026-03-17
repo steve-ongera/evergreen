@@ -190,7 +190,7 @@
                                 </small>
                                 <small class="w-50 text-center py-2">
                                     {% if product.is_in_stock %}
-                                    <a class="text-body"  onclick="addToCart({{ product.id }})">
+                                    <a class="cart-add-link" href="#" onclick="addToCart(event, {{ product.id }})">
                                         <i class="fa fa-shopping-bag text-primary me-2"></i>Add to cart
                                     </a>
                                     {% else %}
@@ -278,7 +278,7 @@
                                 </small>
                                 <small class="w-50 text-center py-2">
                                     {% if product.is_in_stock %}
-                                    <a class="text-body"  onclick="addToCart({{ product.id }})">
+                                    <a class="cart-add-link" href="#" onclick="addToCart(event, {{ product.id }})">
                                         <i class="fa fa-shopping-bag text-primary me-2"></i>Add to cart
                                     </a>
                                     {% else %}
@@ -366,7 +366,7 @@
                         </small>
                         <small class="w-50 text-center py-2">
                             {% if product.is_in_stock %}
-                            <a class="text-body"  onclick="addToCart({{ product.id }})">
+                            <a class="cart-add-link" href="#" onclick="addToCart(event, {{ product.id }})">
                                 <i class="fa fa-shopping-bag text-primary me-2"></i>Add to cart
                             </a>
                             {% else %}
@@ -439,9 +439,50 @@
 <!-- Product End -->
 
 <!-- JavaScript for Add to Cart functionality -->
+<style>
+    /* Style for cart add link - looks like a normal link */
+    .cart-add-link {
+        color: #6c757d;
+        text-decoration: none;
+        cursor: pointer;
+        transition: color 0.2s ease;
+    }
+    
+    .cart-add-link:hover {
+        color: #28a745 !important;
+        text-decoration: underline;
+    }
+    
+    .cart-add-link i {
+        transition: transform 0.2s ease;
+    }
+    
+    .cart-add-link:hover i {
+        transform: scale(1.1);
+    }
+    
+    .fa-bounce {
+        animation: bounce 1s ease;
+    }
+    
+    @keyframes bounce {
+        0%, 100% { transform: scale(1); }
+        25% { transform: scale(1.2); }
+        50% { transform: scale(0.95); }
+        75% { transform: scale(1.1); }
+    }
+    
+    .toast-container {
+        z-index: 9999;
+    }
+</style>
+
 <script>
 // Add to cart function - works with the same backend view as product detail page
-async function addToCart(productId) {
+async function addToCart(event, productId) {
+    // Prevent default link behavior
+    event.preventDefault();
+    
     const button = event.target.closest('a');
     const originalText = button.innerHTML;
     
@@ -476,10 +517,18 @@ async function addToCart(productId) {
                 // Update cart count in navbar
                 updateCartCount(data.cart_total);
                 
-                // Optional: Add animation to cart icon
+                // Animate cart icon
                 animateCartIcon();
+                
+                // Refresh the page after a short delay to show the toast
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
             } else {
                 showToast(data.message || 'Error adding product to cart', 'error');
+                // Restore button state
+                button.innerHTML = originalText;
+                button.disabled = false;
             }
         } else {
             // Handle redirect response (non-AJAX)
@@ -487,12 +536,14 @@ async function addToCart(productId) {
                 window.location.href = response.url;
             } else {
                 showToast('Product added to cart successfully!', 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
             }
         }
     } catch (error) {
         console.error('Error:', error);
         showToast('Error adding product to cart', 'error');
-    } finally {
         // Restore button state
         button.innerHTML = originalText;
         button.disabled = false;
@@ -551,26 +602,6 @@ function getCookie(name) {
     }
     return cookieValue;
 }
-
-// Add CSS for cart animation
-const style = document.createElement('style');
-style.textContent = `
-    .fa-bounce {
-        animation: bounce 1s ease;
-    }
-    
-    @keyframes bounce {
-        0%, 100% { transform: scale(1); }
-        25% { transform: scale(1.2); }
-        50% { transform: scale(0.95); }
-        75% { transform: scale(1.1); }
-    }
-    
-    .toast-container {
-        z-index: 9999;
-    }
-`;
-document.head.appendChild(style);
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
