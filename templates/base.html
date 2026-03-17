@@ -242,14 +242,314 @@
             color: white;
         }
 
-        @media (max-width: 576px) {
-            .search-input-group .form-control {
-                padding-right: 80px;
+        /* Chatbot Styles */
+        .chatbot-container {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            z-index: 9999;
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        .chatbot-toggle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.3s ease;
+            position: relative;
+            border: 2px solid white;
+        }
+
+        .chatbot-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        .chatbot-toggle .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white;
+        }
+
+        .chatbot-box {
+            position: absolute;
+            bottom: 80px;
+            right: 0;
+            width: 380px;
+            height: 500px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid #e9ecef;
+            transform-origin: bottom right;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
             }
-            
-            .search-input-group .search-btn {
-                padding: 8px 15px;
-                font-size: 0.9rem;
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .chatbot-box.open {
+            display: flex;
+        }
+
+        .chatbot-header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .chatbot-avatar {
+            width: 45px;
+            height: 45px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #28a745;
+            font-size: 24px;
+        }
+
+        .chatbot-title {
+            flex: 1;
+        }
+
+        .chatbot-title h5 {
+            margin: 0;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .chatbot-title p {
+            margin: 5px 0 0;
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .chatbot-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+
+        .chatbot-close:hover {
+            opacity: 1;
+        }
+
+        .chatbot-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message.bot {
+            align-items: flex-start;
+        }
+
+        .message.user {
+            align-items: flex-end;
+        }
+
+        .message-content {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.5;
+            position: relative;
+            word-wrap: break-word;
+        }
+
+        .message.bot .message-content {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-bottom-left-radius: 5px;
+        }
+
+        .message.user .message-content {
+            background: #28a745;
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: #6c757d;
+            margin-top: 5px;
+            margin-left: 5px;
+            margin-right: 5px;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 5px;
+            padding: 12px 16px;
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 18px;
+            border-bottom-left-radius: 5px;
+            width: fit-content;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: #6c757d;
+            border-radius: 50%;
+            animation: typing 1s infinite ease-in-out;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .chatbot-input {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            gap: 10px;
+        }
+
+        .chatbot-input input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 50px;
+            outline: none;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .chatbot-input input:focus {
+            border-color: #28a745;
+        }
+
+        .chatbot-input button {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .chatbot-input button:hover {
+            background: #218838;
+            transform: scale(1.05);
+        }
+
+        .chatbot-input button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .suggested-questions {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .suggested-questions p {
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .suggested-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .suggestion-chip {
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid #28a745;
+            border-radius: 50px;
+            font-size: 12px;
+            color: #28a745;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .suggestion-chip:hover {
+            background: #28a745;
+            color: white;
+        }
+
+        @media (max-width: 480px) {
+            .chatbot-box {
+                width: 320px;
+                right: -10px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .chatbot-box {
+                width: calc(100vw - 40px);
+                right: 20px;
             }
         }
     </style>
@@ -462,6 +762,52 @@
 <!-- Back to Top -->
 <a href="#" class="btn btn-lg btn-primary btn-lg-square rounded-circle back-to-top"><i class="bi bi-arrow-up"></i></a>
 
+<!-- Chatbot Container -->
+<div class="chatbot-container">
+    <button class="chatbot-toggle" id="chatbotToggle">
+        <i class="fas fa-comment-dots"></i>
+        <span class="notification-badge" id="chatNotification" style="display: none;">1</span>
+    </button>
+    
+    <div class="chatbot-box" id="chatbotBox">
+        <div class="chatbot-header">
+            <div class="chatbot-avatar">
+                <i class="fas fa-seedling"></i>
+            </div>
+            <div class="chatbot-title">
+                <h5>Farmconnect Assistant</h5>
+                <p><i class="fas fa-circle text-success" style="font-size: 8px;"></i> Online - Usually replies instantly</p>
+            </div>
+            <button class="chatbot-close" id="chatbotClose">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="chatbot-messages" id="chatMessages">
+            <!-- Messages will be added here dynamically -->
+        </div>
+        
+        <div class="suggested-questions">
+            <p>SUGGESTED QUESTIONS</p>
+            <div class="suggested-chips">
+                <span class="suggestion-chip" onclick="sendSuggestion('What products do you sell?')">What products do you sell?</span>
+                <span class="suggestion-chip" onclick="sendSuggestion('Delivery options')">Delivery options</span>
+                <span class="suggestion-chip" onclick="sendSuggestion('Payment methods')">Payment methods</span>
+                <span class="suggestion-chip" onclick="sendSuggestion('Organic certification')">Organic certification</span>
+                <span class="suggestion-chip" onclick="sendSuggestion('Return policy')">Return policy</span>
+                <span class="suggestion-chip" onclick="sendSuggestion('Farm visits')">Farm visits</span>
+            </div>
+        </div>
+        
+        <div class="chatbot-input">
+            <input type="text" id="chatInput" placeholder="Type your message..." onkeypress="handleKeyPress(event)">
+            <button id="sendMessage" onclick="sendMessage()">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- JavaScript Libraries -->
 <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -603,6 +949,259 @@
             searchInput.focus();
         });
     }
+</script>
+
+<!-- Chatbot JavaScript -->
+<script>
+    // Chatbot functionality
+    const chatbotToggle = document.getElementById('chatbotToggle');
+    const chatbotBox = document.getElementById('chatbotBox');
+    const chatbotClose = document.getElementById('chatbotClose');
+    const chatMessages = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const sendButton = document.getElementById('sendMessage');
+    const notificationBadge = document.getElementById('chatNotification');
+
+    // Bot responses database
+    const botResponses = {
+        'hello': "👋 Hi there! Welcome to Farmconnect! How can I help you today?",
+        'hi': "👋 Hello! How can I assist you with your farming needs today?",
+        'hey': "👋 Hey there! What can I do for you?",
+        
+        'products': "🌱 We offer a wide range of products including:\n• Fresh organic vegetables\n• Fruits\n• Grains and cereals\n• Farming supplies\n• Fertilizers\n• Seeds\n• Poultry equipment\n• Livestock feed\n\nWhich category interests you?",
+        'what products do you sell': "🌱 We offer a wide range of products including:\n• Fresh organic vegetables\n• Fruits\n• Grains and cereals\n• Farming supplies\n• Fertilizers\n• Seeds\n• Poultry equipment\n• Livestock feed\n\nWhich category interests you?",
+        'what do you sell': "🌱 We offer a wide range of products including:\n• Fresh organic vegetables\n• Fruits\n• Grains and cereals\n• Farming supplies\n• Fertilizers\n• Seeds\n• Poultry equipment\n• Livestock feed\n\nWhich category interests you?",
+        
+        'delivery': "🚚 We deliver to all major towns in Kenya!\n• Nairobi: 1-2 business days\n• Mombasa: 2-3 business days\n• Kisumu: 2-3 business days\n• Other towns: 3-5 business days\n\nDelivery is free for orders above KSh 3,000!",
+        'delivery options': "🚚 We deliver to all major towns in Kenya!\n• Nairobi: 1-2 business days\n• Mombasa: 2-3 business days\n• Kisumu: 2-3 business days\n• Other towns: 3-5 business days\n\nDelivery is free for orders above KSh 3,000!",
+        'shipping': "🚚 We deliver to all major towns in Kenya!\n• Nairobi: 1-2 business days\n• Mombasa: 2-3 business days\n• Kisumu: 2-3 business days\n• Other towns: 3-5 business days\n\nDelivery is free for orders above KSh 3,000!",
+        
+        'payment': "💰 We accept multiple payment methods:\n• M-Pesa (Lipa Na M-Pesa)\n• Bank transfer\n• Credit/Debit cards\n• Cash on delivery (Nairobi only)\n\nAll payments are secure and encrypted.",
+        'payment methods': "💰 We accept multiple payment methods:\n• M-Pesa (Lipa Na M-Pesa)\n• Bank transfer\n• Credit/Debit cards\n• Cash on delivery (Nairobi only)\n\nAll payments are secure and encrypted.",
+        'how to pay': "💰 We accept multiple payment methods:\n• M-Pesa (Lipa Na M-Pesa)\n• Bank transfer\n• Credit/Debit cards\n• Cash on delivery (Nairobi only)\n\nAll payments are secure and encrypted.",
+        
+        'organic': "🌿 Yes! All our products are certified organic. We work directly with farmers who use sustainable farming practices without harmful chemicals. Our organic certification is verified by Kenya Organic Agriculture Network (KOAN).",
+        'organic certification': "🌿 Yes! All our products are certified organic. We work directly with farmers who use sustainable farming practices without harmful chemicals. Our organic certification is verified by Kenya Organic Agriculture Network (KOAN).",
+        'are your products organic': "🌿 Yes! All our products are certified organic. We work directly with farmers who use sustainable farming practices without harmful chemicals. Our organic certification is verified by Kenya Organic Agriculture Network (KOAN).",
+        
+        'return': "🔄 We have a 7-day return policy:\n• Fresh produce must be returned within 24 hours\n• Non-perishable items within 7 days\n• Items must be unused and in original packaging\n• Contact our support team to initiate return\n\nFor more details, visit our Returns page.",
+        'return policy': "🔄 We have a 7-day return policy:\n• Fresh produce must be returned within 24 hours\n• Non-perishable items within 7 days\n• Items must be unused and in original packaging\n• Contact our support team to initiate return\n\nFor more details, visit our Returns page.",
+        'can i return': "🔄 We have a 7-day return policy:\n• Fresh produce must be returned within 24 hours\n• Non-perishable items within 7 days\n• Items must be unused and in original packaging\n• Contact our support team to initiate return\n\nFor more details, visit our Returns page.",
+        
+        'farm': "🏡 Yes! We welcome farm visits! You can visit our partner farms in:\n• Kiambu (Vegetables)\n• Murang'a (Fruits)\n• Nakuru (Grains)\n\nBook a visit through our Contact page or call +254 712 345 678.",
+        'farm visits': "🏡 Yes! We welcome farm visits! You can visit our partner farms in:\n• Kiambu (Vegetables)\n• Murang'a (Fruits)\n• Nakuru (Grains)\n\nBook a visit through our Contact page or call +254 712 345 678.",
+        'visit farm': "🏡 Yes! We welcome farm visits! You can visit our partner farms in:\n• Kiambu (Vegetables)\n• Murang'a (Fruits)\n• Nakuru (Grains)\n\nBook a visit through our Contact page or call +254 712 345 678.",
+        
+        'price': "💰 Product prices vary by item. You can check specific product prices on our Products page. We also offer bulk purchase discounts! Would you like me to help you find something specific?",
+        'pricing': "💰 Product prices vary by item. You can check specific product prices on our Products page. We also offer bulk purchase discounts! Would you like me to help you find something specific?",
+        'cost': "💰 Product prices vary by item. You can check specific product prices on our Products page. We also offer bulk purchase discounts! Would you like me to help you find something specific?",
+        
+        'contact': "📞 You can reach us through:\n• Phone: +254 712 345 678\n• Email: info@farmconnect.co.ke\n• WhatsApp: +254 712 345 678\n• Visit our Contact page for the form\n\nWe're here to help!",
+        'customer service': "📞 You can reach us through:\n• Phone: +254 712 345 678\n• Email: info@farmconnect.co.ke\n• WhatsApp: +254 712 345 678\n• Visit our Contact page for the form\n\nWe're here to help!",
+        'support': "📞 You can reach us through:\n• Phone: +254 712 345 678\n• Email: info@farmconnect.co.ke\n• WhatsApp: +254 712 345 678\n• Visit our Contact page for the form\n\nWe're here to help!",
+        
+        'hours': "⏰ Our customer service is available:\n• Monday - Friday: 8:00 AM - 8:00 PM\n• Saturday: 9:00 AM - 6:00 PM\n• Sunday: 10:00 AM - 4:00 PM\n\nOrders can be placed 24/7 on our website.",
+        'opening hours': "⏰ Our customer service is available:\n• Monday - Friday: 8:00 AM - 8:00 PM\n• Saturday: 9:00 AM - 6:00 PM\n• Sunday: 10:00 AM - 4:00 PM\n\nOrders can be placed 24/7 on our website.",
+        'working hours': "⏰ Our customer service is available:\n• Monday - Friday: 8:00 AM - 8:00 PM\n• Saturday: 9:00 AM - 6:00 PM\n• Sunday: 10:00 AM - 4:00 PM\n\nOrders can be placed 24/7 on our website.",
+        
+        'wholesale': "📦 Yes! We offer wholesale prices for bulk orders. Minimum order for wholesale:\n• Vegetables: 50kg\n• Fruits: 50kg\n• Grains: 100kg\n\nContact our sales team for a custom quote!",
+        'bulk': "📦 Yes! We offer wholesale prices for bulk orders. Minimum order for wholesale:\n• Vegetables: 50kg\n• Fruits: 50kg\n• Grains: 100kg\n\nContact our sales team for a custom quote!",
+        'large order': "📦 Yes! We offer wholesale prices for bulk orders. Minimum order for wholesale:\n• Vegetables: 50kg\n• Fruits: 50kg\n• Grains: 100kg\n\nContact our sales team for a custom quote!",
+        
+        'thank': "😊 You're welcome! Is there anything else I can help you with today?",
+        'thanks': "😊 You're welcome! Is there anything else I can help you with today?",
+        'thank you': "😊 You're welcome! Is there anything else I can help you with today?",
+        
+        'bye': "👋 Goodbye! Feel free to come back if you have more questions. Happy farming! 🌱",
+        'goodbye': "👋 Goodbye! Feel free to come back if you have more questions. Happy farming! 🌱",
+        'see you': "👋 Goodbye! Feel free to come back if you have more questions. Happy farming! 🌱",
+    };
+
+    // Default response for unknown queries
+    const defaultResponse = "🤔 I'm not sure I understand. Could you please rephrase your question? You can ask me about:\n• Products\n• Delivery\n• Payment\n• Organic certification\n• Returns\n• Farm visits\n• Pricing\n• Contact information\n\nOr type 'help' for more options.";
+
+    // Initialize chat with welcome message
+    function initChat() {
+        addMessage("👋 Hello! I'm your Farmconnect assistant. How can I help you today? You can ask me about products, delivery, payment, and more!", 'bot');
+        
+        // Show notification badge on first load
+        setTimeout(() => {
+            notificationBadge.style.display = 'flex';
+        }, 5000);
+    }
+
+    // Toggle chatbot
+    chatbotToggle.addEventListener('click', function() {
+        chatbotBox.classList.toggle('open');
+        if (chatbotBox.classList.contains('open')) {
+            notificationBadge.style.display = 'none';
+            chatInput.focus();
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    });
+
+    // Close chatbot
+    chatbotClose.addEventListener('click', function() {
+        chatbotBox.classList.remove('open');
+    });
+
+    // Handle key press in input
+    function handleKeyPress(event) {
+        if (event.key === 'Enter') {
+            sendMessage();
+        }
+    }
+
+    // Send message function
+    function sendMessage() {
+        const message = chatInput.value.trim();
+        if (message === '') return;
+
+        // Add user message
+        addMessage(message, 'user');
+        chatInput.value = '';
+
+        // Show typing indicator
+        showTypingIndicator();
+
+        // Disable input and button while "typing"
+        chatInput.disabled = true;
+        sendButton.disabled = true;
+
+        // Get bot response after delay
+        setTimeout(() => {
+            hideTypingIndicator();
+            const response = getBotResponse(message.toLowerCase());
+            addMessage(response, 'bot');
+            
+            // Re-enable input
+            chatInput.disabled = false;
+            sendButton.disabled = false;
+            chatInput.focus();
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }, 1500);
+    }
+
+    // Function to send suggestion
+    function sendSuggestion(text) {
+        addMessage(text, 'user');
+        
+        // Show typing indicator
+        showTypingIndicator();
+        
+        // Disable input and button while "typing"
+        chatInput.disabled = true;
+        sendButton.disabled = true;
+        
+        setTimeout(() => {
+            hideTypingIndicator();
+            const response = getBotResponse(text.toLowerCase());
+            addMessage(response, 'bot');
+            
+            // Re-enable input
+            chatInput.disabled = false;
+            sendButton.disabled = false;
+            chatInput.focus();
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }, 1000);
+    }
+
+    // Get bot response based on user input
+    function getBotResponse(input) {
+        // Check for exact matches
+        for (let key in botResponses) {
+            if (input.includes(key)) {
+                return botResponses[key];
+            }
+        }
+        
+        // Check for partial matches
+        if (input.includes('product') || input.includes('sell')) {
+            return botResponses['products'];
+        } else if (input.includes('deliver') || input.includes('shipping')) {
+            return botResponses['delivery'];
+        } else if (input.includes('pay') || input.includes('mpesa') || input.includes('cash')) {
+            return botResponses['payment'];
+        } else if (input.includes('organic') || input.includes('certified')) {
+            return botResponses['organic'];
+        } else if (input.includes('return') || input.includes('refund')) {
+            return botResponses['return'];
+        } else if (input.includes('farm') || input.includes('visit')) {
+            return botResponses['farm'];
+        } else if (input.includes('price') || input.includes('cost') || input.includes('how much')) {
+            return botResponses['price'];
+        } else if (input.includes('contact') || input.includes('phone') || input.includes('email')) {
+            return botResponses['contact'];
+        } else if (input.includes('hour') || input.includes('time') || input.includes('open')) {
+            return botResponses['hours'];
+        } else if (input.includes('wholesale') || input.includes('bulk') || input.includes('large')) {
+            return botResponses['wholesale'];
+        } else if (input.includes('thank') || input.includes('thanks')) {
+            return botResponses['thank'];
+        } else if (input.includes('bye') || input.includes('goodbye')) {
+            return botResponses['bye'];
+        } else if (input.includes('help')) {
+            return "🤔 I can help you with:\n• Products\n• Delivery\n• Payment\n• Organic certification\n• Returns\n• Farm visits\n• Pricing\n• Contact information\n\nJust ask me anything!";
+        }
+        
+        return defaultResponse;
+    }
+
+    // Add message to chat
+    function addMessage(text, sender) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}`;
+        
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        messageDiv.innerHTML = `
+            <div class="message-content">${text.replace(/\n/g, '<br>')}</div>
+            <div class="message-time">${time}</div>
+        `;
+        
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Show typing indicator
+    function showTypingIndicator() {
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'message bot';
+        typingDiv.id = 'typingIndicator';
+        typingDiv.innerHTML = `
+            <div class="typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        `;
+        chatMessages.appendChild(typingDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Hide typing indicator
+    function hideTypingIndicator() {
+        const typingIndicator = document.getElementById('typingIndicator');
+        if (typingIndicator) {
+            typingIndicator.remove();
+        }
+    }
+
+    // Initialize chat on page load
+    document.addEventListener('DOMContentLoaded', initChat);
+
+    // Close chatbot when clicking outside (optional)
+    document.addEventListener('click', function(event) {
+        const isClickInside = chatbotBox.contains(event.target) || chatbotToggle.contains(event.target);
+        if (!isClickInside && chatbotBox.classList.contains('open')) {
+            chatbotBox.classList.remove('open');
+        }
+    });
 </script>
 
 {% block extra_js %}{% endblock %}
