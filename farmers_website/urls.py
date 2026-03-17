@@ -7,7 +7,8 @@ urlpatterns = [
     path('products/', views.product_list, name='product_list'),
     path('product/<slug:slug>/', views.product_detail, name='product_detail'),
     path('category/<slug:category_slug>/', views.category_products_view, name='category_products'),
-    path('search/', views.search_products, name='search_products'),
+    path('search/products/', views.search_products, name='search_products'),  # Add this line
+    path('search/', views.search_products, name='search_products_alt'),  # Keep this for backward compatibility
     
     
 

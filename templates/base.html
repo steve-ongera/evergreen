@@ -52,6 +52,207 @@
       "telephone": "+254XXXXXXXXX"
     }
     </script>
+
+    <style>
+        /* Search Modal Styles */
+        .search-modal .modal-content {
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .search-modal .modal-header {
+            border-bottom: 2px solid #f0f0f0;
+            padding: 1.5rem;
+        }
+
+        .search-modal .modal-title {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .search-modal .modal-body {
+            padding: 1.5rem;
+        }
+
+        .search-input-group {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-input-group .form-control {
+            height: 55px;
+            border-radius: 50px;
+            border: 2px solid #e9ecef;
+            padding-left: 50px;
+            padding-right: 120px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-input-group .form-control:focus {
+            border-color: #28a745;
+            box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+        }
+
+        .search-input-group .search-icon {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+            z-index: 10;
+        }
+
+        .search-input-group .search-btn {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-radius: 50px;
+            padding: 8px 25px;
+            background: #28a745;
+            color: white;
+            border: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .search-input-group .search-btn:hover {
+            background: #218838;
+        }
+
+        .search-results-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .search-results-container.show {
+            display: block;
+        }
+
+        .search-result-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid #e9ecef;
+            transition: background 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .search-result-item:hover {
+            background: #f8f9fa;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-result-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-right: 15px;
+        }
+
+        .search-result-info {
+            flex: 1;
+        }
+
+        .search-result-name {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+
+        .search-result-category {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-bottom: 2px;
+        }
+
+        .search-result-price {
+            color: #28a745;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .search-loading {
+            text-align: center;
+            padding: 30px;
+            color: #6c757d;
+            display: none;
+        }
+
+        .search-loading.show {
+            display: block;
+        }
+
+        .search-no-results {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6c757d;
+            display: none;
+        }
+
+        .search-no-results.show {
+            display: block;
+        }
+
+        .search-no-results i {
+            font-size: 3rem;
+            color: #dee2e6;
+            margin-bottom: 15px;
+        }
+
+        .search-popular-tags {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .search-popular-tags h6 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .search-popular-tags .badge {
+            padding: 8px 15px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            color: #2c3e50;
+            border-radius: 50px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .search-popular-tags .badge:hover {
+            background: #28a745;
+            color: white;
+        }
+
+        @media (max-width: 576px) {
+            .search-input-group .form-control {
+                padding-right: 80px;
+            }
+            
+            .search-input-group .search-btn {
+                padding: 8px 15px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -122,8 +323,7 @@
                     <small class="fa fa-user text-body"></small>
                 </a>
                 
-                
-               
+                <!-- Cart Button -->
                 <a class="btn-sm-square bg-white rounded-circle ms-3 position-relative" href="{% url 'cart_summary' %}" title="Shopping Cart">
                     <small class="fa fa-shopping-bag text-body"></small>
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary{% if cart_items_count == 0 %} d-none{% endif %}" style="font-size: 0.6rem;">
@@ -136,11 +336,73 @@
 </div>
 <!-- Navbar End -->
 
-    <!-- Main Content -->
-    {% block content %}
-    {% endblock content %}
+<!-- Search Modal -->
+<div class="modal fade search-modal" id="searchModal" tabindex="-1" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="searchModalLabel">
+                    <i class="fas fa-search text-primary me-2"></i>Search Products
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="searchForm" action="{% url 'product_list' %}" method="get">
+                    <div class="search-input-group">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" 
+                               class="form-control" 
+                               name="q" 
+                               id="searchInput" 
+                               placeholder="Search for products, categories, brands..."
+                               autocomplete="off"
+                               minlength="2">
+                        <button type="submit" class="search-btn">Search</button>
+                    </div>
+                </form>
 
-    <!-- Footer Start -->
+                <!-- Loading Indicator -->
+                <div class="search-loading" id="searchLoading">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Searching products...</p>
+                </div>
+
+                <!-- Search Results -->
+                <div class="search-results-container" id="searchResults"></div>
+
+                <!-- No Results -->
+                <div class="search-no-results" id="searchNoResults">
+                    <i class="fas fa-search"></i>
+                    <h5>No products found</h5>
+                    <p class="text-muted">Try searching with different keywords</p>
+                </div>
+
+                <!-- Popular Search Tags -->
+                <div class="search-popular-tags">
+                    <h6><i class="fas fa-fire text-warning me-2"></i>Popular Searches</h6>
+                    <div>
+                        <span class="badge" onclick="quickSearch('vegetables')">Vegetables</span>
+                        <span class="badge" onclick="quickSearch('fruits')">Fruits</span>
+                        <span class="badge" onclick="quickSearch('organic')">Organic</span>
+                        <span class="badge" onclick="quickSearch('maize')">Maize</span>
+                        <span class="badge" onclick="quickSearch('beans')">Beans</span>
+                        <span class="badge" onclick="quickSearch('fertilizer')">Fertilizer</span>
+                        <span class="badge" onclick="quickSearch('seeds')">Seeds</span>
+                        <span class="badge" onclick="quickSearch('poultry')">Poultry</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+{% block content %}
+{% endblock content %}
+
+<!-- Footer Start -->
 <div class="container-fluid bg-dark footer mt-5 pt-5 wow fadeIn" data-wow-delay="0.1s">
     <div class="container py-5">
         <div class="row g-5">
@@ -210,7 +472,140 @@
 
 <!-- Template Javascript -->
 <script src="{% static 'js/main.js' %}"></script>
-    {% block extra_js %}{% endblock %}
+
+<!-- Search Modal JavaScript -->
+<script>
+    let searchTimeout;
+    const searchInput = document.getElementById('searchInput');
+    const searchResults = document.getElementById('searchResults');
+    const searchLoading = document.getElementById('searchLoading');
+    const searchNoResults = document.getElementById('searchNoResults');
+
+    // Function to perform search
+    async function performSearch(query) {
+        if (query.length < 2) {
+            searchResults.classList.remove('show');
+            searchLoading.classList.remove('show');
+            searchNoResults.classList.remove('show');
+            return;
+        }
+
+        // Show loading
+        searchLoading.classList.add('show');
+        searchResults.classList.remove('show');
+        searchNoResults.classList.remove('show');
+
+        try {
+            const response = await fetch(`/search/products/?q=${encodeURIComponent(query)}`);
+            const data = await response.json();
+
+            // Hide loading
+            searchLoading.classList.remove('show');
+
+            if (data.products && data.products.length > 0) {
+                displayResults(data.products);
+                searchResults.classList.add('show');
+                searchNoResults.classList.remove('show');
+            } else {
+                searchResults.classList.remove('show');
+                searchNoResults.classList.add('show');
+            }
+        } catch (error) {
+            console.error('Search error:', error);
+            searchLoading.classList.remove('show');
+            searchResults.classList.remove('show');
+            searchNoResults.classList.add('show');
+        }
+    }
+
+    // Function to display search results
+    function displayResults(products) {
+        let html = '';
+        
+        products.forEach(product => {
+            html += `
+                <a href="${product.url}" class="search-result-item" onclick="closeModalAndRedirect('${product.url}')">
+                    <img src="${product.image || '/static/img/product-placeholder.jpg'}" 
+                         alt="${product.name}" 
+                         class="search-result-image"
+                         onerror="this.src='/static/img/product-placeholder.jpg'">
+                    <div class="search-result-info">
+                        <div class="search-result-name">${product.name}</div>
+                        <div class="search-result-category">
+                            <i class="fas fa-tag me-1"></i>${product.category}
+                        </div>
+                        <div class="search-result-price">
+                            KSh ${product.price}
+                        </div>
+                    </div>
+                </a>
+            `;
+        });
+
+        searchResults.innerHTML = html;
+    }
+
+    // Function to close modal and redirect
+    function closeModalAndRedirect(url) {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('searchModal'));
+        if (modal) {
+            modal.hide();
+        }
+        window.location.href = url;
+    }
+
+    // Function for quick search from popular tags
+    function quickSearch(term) {
+        searchInput.value = term;
+        performSearch(term);
+        
+        // Optionally submit the form after a short delay
+        setTimeout(() => {
+            document.getElementById('searchForm').submit();
+        }, 500);
+    }
+
+    // Debounced search input handler
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+            
+            searchTimeout = setTimeout(() => {
+                performSearch(query);
+            }, 300); // Wait 300ms after user stops typing
+        });
+
+        // Handle enter key
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const query = this.value.trim();
+                if (query.length >= 2) {
+                    document.getElementById('searchForm').submit();
+                }
+            }
+        });
+    }
+
+    // Clear search when modal is closed
+    const searchModal = document.getElementById('searchModal');
+    if (searchModal) {
+        searchModal.addEventListener('hidden.bs.modal', function() {
+            searchInput.value = '';
+            searchResults.classList.remove('show');
+            searchLoading.classList.remove('show');
+            searchNoResults.classList.remove('show');
+        });
+
+        // Focus search input when modal opens
+        searchModal.addEventListener('shown.bs.modal', function() {
+            searchInput.focus();
+        });
+    }
+</script>
+
+{% block extra_js %}{% endblock %}
 </body>
 
 </html>

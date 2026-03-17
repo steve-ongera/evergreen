@@ -606,33 +606,83 @@ def category_products_view(request, category_slug):
     return render(request, 'category_products.html', context)
 
 
+import logging
+import traceback
+from django.http import JsonResponse
+from django.db.models import Q
+from .models import Product
+
+logger = logging.getLogger(__name__)
+
 def search_products(request):
-    """Search products via AJAX"""
-    query = request.GET.get('q', '')
-    
-    if len(query) < 2:
-        return JsonResponse({'products': []})
-    
-    products = Product.objects.filter(
-        Q(name__icontains=query) |
-        Q(description__icontains=query) |
-        Q(category__name__icontains=query),
-        is_active=True
-    ).select_related('category').prefetch_related('images')[:10]
-    
-    results = []
-    for product in products:
-        results.append({
-            'id': product.id,
-            'name': product.name,
-            'slug': product.slug,
-            'price': str(product.selling_price),
-            'image': product.main_image.url if product.main_image else '',
-            'category': product.category.name,
-            'url': product.get_absolute_url(),
-        })
-    
-    return JsonResponse({'products': results})
+    """Search products via AJAX with improved error handling"""
+    try:
+        query = request.GET.get('q', '').strip()
+        
+        if len(query) < 2:
+            return JsonResponse({'products': []})
+        
+        # Log the search query for debugging
+        logger.info(f"Search query: '{query}'")
+        
+        products = Product.objects.filter(
+            Q(name__icontains=query) |
+            Q(description__icontains=query) |
+            Q(category__name__icontains=query) |
+            Q(subcategory__name__icontains=query) |
+            Q(brand__name__icontains=query),
+            is_active=True
+        ).select_related('category', 'subcategory', 'brand').prefetch_related('images').distinct()[:10]
+        
+        # Log the number of products found
+        logger.info(f"Found {products.count()} products for query: '{query}'")
+        
+        results = []
+        for product in products:
+            try:
+                # Safely get the main image URL
+                image_url = ''
+                try:
+                    # Try to get main image
+                    main_image = product.images.filter(is_main=True).first()
+                    if main_image and main_image.image:
+                        image_url = main_image.image.url
+                    else:
+                        # If no main image, get first image
+                        first_image = product.images.first()
+                        if first_image and first_image.image:
+                            image_url = first_image.image.url
+                except Exception as img_error:
+                    logger.warning(f"Error getting image for product {product.id}: {str(img_error)}")
+                    image_url = ''
+                
+                # Get category name safely
+                category_name = product.category.name if product.category else 'Uncategorized'
+                
+                results.append({
+                    'id': product.id,
+                    'name': product.name,
+                    'slug': product.slug,
+                    'price': f"{product.selling_price:.2f}",
+                    'image': image_url,
+                    'category': category_name,
+                    'url': product.get_absolute_url(),
+                })
+            except Exception as product_error:
+                logger.error(f"Error processing product {product.id}: {str(product_error)}")
+                continue  # Skip this product and continue with others
+        
+        return JsonResponse({'products': results})
+        
+    except Exception as e:
+        # Log the full error with traceback
+        logger.error(f"Search error: {str(e)}\n{traceback.format_exc()}")
+        
+        # Return a proper error response
+        return JsonResponse({
+            'error': 'An error occurred while searching',
+            'products': []
+        }, status=500)
 
 
 from django.shortcuts import render, get_object_or_404
