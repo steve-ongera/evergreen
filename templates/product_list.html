@@ -20,6 +20,20 @@
 </div>
 <!-- Page Header End -->
 
+<!-- Toast notification for cart actions -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999;">
+    <div id="cartToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i class="fas fa-shopping-cart text-success me-2"></i>
+            <strong class="me-auto">Cart Update</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toastMessage">
+            Product added to cart successfully!
+        </div>
+    </div>
+</div>
+
 <!-- Product Start -->
 <div class="container-xxl py-5">
     <div class="container">
@@ -61,7 +75,7 @@
         <!-- Filtering and Sorting Controls -->
         <div class="row mb-4">
             <div class="col-12">
-                <form method="get" class="row g-3 align-items-center">
+                <form method="get" class="row g-3 align-items-center" id="filterForm">
                     <!-- Search -->
                     <div class="col-md-3">
                         <input type="text" name="q" class="form-control" placeholder="Search products..." value="{{ search_query|default:'' }}">
@@ -117,7 +131,7 @@
             <div id="tab-all" class="tab-pane fade show p-0 active">
                 <div class="row g-4">
                     {% for product in category_products|get_item:'all' %}
-                    <div class="col-xl-3 col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="{{ forloop.counter0|floatformat:1|add:"0.1" }}s">
+                    <div class="col-xl-3 col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="{{ forloop.counter0|floatformat:1|add:'0.1' }}s">
                         <div class="product-item">
                             <div class="position-relative bg-light overflow-hidden">
                                 {% if product.main_image %}
@@ -126,18 +140,25 @@
                                     <img class="img-fluid w-100" src="{% static 'img/product-placeholder.jpg' %}" alt="{{ product.name }}">
                                 {% endif %}
                                 
+                                {% if product.discount_percentage > 0 %}
+                                <div class="position-absolute top-0 start-0 m-4 py-1 px-3 bg-danger text-white rounded">
+                                    -{{ product.discount_percentage }}%
+                                </div>
+                                {% endif %}
+                                
                                 {% if product.tags.exists %}
+                                    <div class="position-absolute top-0 end-0 m-4">
                                     {% for tag in product.tags.all %}
-                                        <div class="bg-secondary rounded text-white position-absolute start-0 top-0 m-4 py-1 px-3">{{ tag.name }}</div>
-                                        {% if forloop.first %}  {% endif %}
+                                        <span class="badge" style="background-color: {{ tag.color }}; margin-left: 5px;">{{ tag.name }}</span>
                                     {% endfor %}
+                                    </div>
                                 {% endif %}
                             </div>
                             <div class="text-center p-4">
                                 <a class="d-block h5 mb-2" href="{{ product.get_absolute_url }}">{{ product.name }}</a>
-                                <span class="text-primary me-1">${{ product.selling_price }}</span>
+                                <span class="text-primary me-1">KSh {{ product.selling_price|floatformat:2 }}</span>
                                 {% if product.discount_price %}
-                                    <span class="text-body text-decoration-line-through">${{ product.price }}</span>
+                                    <span class="text-body text-decoration-line-through">KSh {{ product.price|floatformat:2 }}</span>
                                 {% endif %}
                                 <div class="mt-2">
                                     <small class="text-muted">{{ product.category.name }}</small>
@@ -145,6 +166,21 @@
                                     <small class="text-muted"> | {{ product.brand.name }}</small>
                                     {% endif %}
                                 </div>
+                                
+                                <!-- Stock Status -->
+                                {% if product.stock_quantity > 0 %}
+                                    {% if product.stock_quantity <= product.low_stock_threshold %}
+                                    <div class="mt-2">
+                                        <small class="text-warning">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>Only {{ product.stock_quantity }} left
+                                        </small>
+                                    </div>
+                                    {% endif %}
+                                {% else %}
+                                <div class="mt-2">
+                                    <span class="badge bg-danger">Out of Stock</span>
+                                </div>
+                                {% endif %}
                             </div>
                             <div class="d-flex border-top">
                                 <small class="w-50 text-center border-end py-2">
@@ -153,9 +189,15 @@
                                     </a>
                                 </small>
                                 <small class="w-50 text-center py-2">
-                                    <a class="text-body" href="#" onclick="addToCart({{ product.id }})">
+                                    {% if product.is_in_stock %}
+                                    <a class="text-body"  onclick="addToCart({{ product.id }})">
                                         <i class="fa fa-shopping-bag text-primary me-2"></i>Add to cart
                                     </a>
+                                    {% else %}
+                                    <span class="text-muted">
+                                        <i class="fa fa-shopping-bag text-muted me-2"></i>Out of stock
+                                    </span>
+                                    {% endif %}
                                 </small>
                             </div>
                         </div>
@@ -177,7 +219,7 @@
             <div id="tab-{{ category.slug }}" class="tab-pane fade show p-0">
                 <div class="row g-4">
                     {% for product in category_products|get_item:category.slug %}
-                    <div class="col-xl-3 col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="{{ forloop.counter0|floatformat:1|add:"0.1" }}s">
+                    <div class="col-xl-3 col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="{{ forloop.counter0|floatformat:1|add:'0.1' }}s">
                         <div class="product-item">
                             <div class="position-relative bg-light overflow-hidden">
                                 {% if product.main_image %}
@@ -186,18 +228,46 @@
                                     <img class="img-fluid w-100" src="{% static 'img/product-placeholder.jpg' %}" alt="{{ product.name }}">
                                 {% endif %}
                                 
+                                {% if product.discount_percentage > 0 %}
+                                <div class="position-absolute top-0 start-0 m-4 py-1 px-3 bg-danger text-white rounded">
+                                    -{{ product.discount_percentage }}%
+                                </div>
+                                {% endif %}
+                                
                                 {% if product.tags.exists %}
+                                    <div class="position-absolute top-0 end-0 m-4">
                                     {% for tag in product.tags.all %}
-                                        <div class="bg-secondary rounded text-white position-absolute start-0 top-0 m-4 py-1 px-3">{{ tag.name }}</div>
-                                        {% if forloop.first %}  {% endif %}
+                                        <span class="badge" style="background-color: {{ tag.color }}; margin-left: 5px;">{{ tag.name }}</span>
                                     {% endfor %}
+                                    </div>
                                 {% endif %}
                             </div>
                             <div class="text-center p-4">
                                 <a class="d-block h5 mb-2" href="{{ product.get_absolute_url }}">{{ product.name }}</a>
-                                <span class="text-primary me-1">${{ product.selling_price }}</span>
+                                <span class="text-primary me-1">KSh {{ product.selling_price|floatformat:2 }}</span>
                                 {% if product.discount_price %}
-                                    <span class="text-body text-decoration-line-through">${{ product.price }}</span>
+                                    <span class="text-body text-decoration-line-through">KSh {{ product.price|floatformat:2 }}</span>
+                                {% endif %}
+                                <div class="mt-2">
+                                    <small class="text-muted">{{ product.category.name }}</small>
+                                    {% if product.brand %}
+                                    <small class="text-muted"> | {{ product.brand.name }}</small>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Stock Status -->
+                                {% if product.stock_quantity > 0 %}
+                                    {% if product.stock_quantity <= product.low_stock_threshold %}
+                                    <div class="mt-2">
+                                        <small class="text-warning">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>Only {{ product.stock_quantity }} left
+                                        </small>
+                                    </div>
+                                    {% endif %}
+                                {% else %}
+                                <div class="mt-2">
+                                    <span class="badge bg-danger">Out of Stock</span>
+                                </div>
                                 {% endif %}
                             </div>
                             <div class="d-flex border-top">
@@ -207,9 +277,15 @@
                                     </a>
                                 </small>
                                 <small class="w-50 text-center py-2">
-                                    <a class="text-body" href="#" onclick="addToCart({{ product.id }})">
+                                    {% if product.is_in_stock %}
+                                    <a class="text-body"  onclick="addToCart({{ product.id }})">
                                         <i class="fa fa-shopping-bag text-primary me-2"></i>Add to cart
                                     </a>
+                                    {% else %}
+                                    <span class="text-muted">
+                                        <i class="fa fa-shopping-bag text-muted me-2"></i>Out of stock
+                                    </span>
+                                    {% endif %}
                                 </small>
                             </div>
                         </div>
@@ -231,7 +307,7 @@
         <!-- Paginated All Products View (when filters applied or viewing all products) -->
         <div class="row g-4">
             {% for product in page_obj %}
-            <div class="col-xl-3 col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="{{ forloop.counter0|floatformat:1|add:"0.1" }}s">
+            <div class="col-xl-3 col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="{{ forloop.counter0|floatformat:1|add:'0.1' }}s">
                 <div class="product-item">
                     <div class="position-relative bg-light overflow-hidden">
                         {% if product.main_image %}
@@ -240,18 +316,25 @@
                             <img class="img-fluid w-100" src="{% static 'img/product-placeholder.jpg' %}" alt="{{ product.name }}">
                         {% endif %}
                         
+                        {% if product.discount_percentage > 0 %}
+                        <div class="position-absolute top-0 start-0 m-4 py-1 px-3 bg-danger text-white rounded">
+                            -{{ product.discount_percentage }}%
+                        </div>
+                        {% endif %}
+                        
                         {% if product.tags.exists %}
+                            <div class="position-absolute top-0 end-0 m-4">
                             {% for tag in product.tags.all %}
-                                <div class="bg-secondary rounded text-white position-absolute start-0 top-0 m-4 py-1 px-3">{{ tag.name }}</div>
-                                {% if forloop.first %} {% endif %}
+                                <span class="badge" style="background-color: {{ tag.color }}; margin-left: 5px;">{{ tag.name }}</span>
                             {% endfor %}
+                            </div>
                         {% endif %}
                     </div>
                     <div class="text-center p-4">
                         <a class="d-block h5 mb-2" href="{{ product.get_absolute_url }}">{{ product.name }}</a>
-                        <span class="text-primary me-1">${{ product.selling_price }}</span>
+                        <span class="text-primary me-1">KSh {{ product.selling_price|floatformat:2 }}</span>
                         {% if product.discount_price %}
-                            <span class="text-body text-decoration-line-through">${{ product.price }}</span>
+                            <span class="text-body text-decoration-line-through">KSh {{ product.price|floatformat:2 }}</span>
                         {% endif %}
                         <div class="mt-2">
                             <small class="text-muted">{{ product.category.name }}</small>
@@ -259,6 +342,21 @@
                             <small class="text-muted"> | {{ product.brand.name }}</small>
                             {% endif %}
                         </div>
+                        
+                        <!-- Stock Status -->
+                        {% if product.stock_quantity > 0 %}
+                            {% if product.stock_quantity <= product.low_stock_threshold %}
+                            <div class="mt-2">
+                                <small class="text-warning">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>Only {{ product.stock_quantity }} left
+                                </small>
+                            </div>
+                            {% endif %}
+                        {% else %}
+                        <div class="mt-2">
+                            <span class="badge bg-danger">Out of Stock</span>
+                        </div>
+                        {% endif %}
                     </div>
                     <div class="d-flex border-top">
                         <small class="w-50 text-center border-end py-2">
@@ -267,9 +365,15 @@
                             </a>
                         </small>
                         <small class="w-50 text-center py-2">
-                            <a class="text-body" href="#" onclick="addToCart({{ product.id }})">
+                            {% if product.is_in_stock %}
+                            <a class="text-body"  onclick="addToCart({{ product.id }})">
                                 <i class="fa fa-shopping-bag text-primary me-2"></i>Add to cart
                             </a>
+                            {% else %}
+                            <span class="text-muted">
+                                <i class="fa fa-shopping-bag text-muted me-2"></i>Out of stock
+                            </span>
+                            {% endif %}
                         </small>
                     </div>
                 </div>
@@ -333,6 +437,147 @@
     </div>
 </div>
 <!-- Product End -->
+
+<!-- JavaScript for Add to Cart functionality -->
+<script>
+// Add to cart function - works with the same backend view as product detail page
+async function addToCart(productId) {
+    const button = event.target.closest('a');
+    const originalText = button.innerHTML;
+    
+    // Show loading state
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Adding...';
+    button.disabled = true;
+    
+    try {
+        // Create form data
+        const formData = new FormData();
+        formData.append('product_id', productId);
+        formData.append('quantity', 1); // Default quantity of 1 for product list
+        formData.append('csrfmiddlewaretoken', getCookie('csrftoken'));
+        
+        const response = await fetch(`/cart/add/${productId}/`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            
+            if (data.success) {
+                // Show success toast
+                showToast(data.message, 'success');
+                
+                // Update cart count in navbar
+                updateCartCount(data.cart_total);
+                
+                // Optional: Add animation to cart icon
+                animateCartIcon();
+            } else {
+                showToast(data.message || 'Error adding product to cart', 'error');
+            }
+        } else {
+            // Handle redirect response (non-AJAX)
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else {
+                showToast('Product added to cart successfully!', 'success');
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Error adding product to cart', 'error');
+    } finally {
+        // Restore button state
+        button.innerHTML = originalText;
+        button.disabled = false;
+    }
+}
+
+// Update cart count in navbar
+function updateCartCount(count) {
+    const cartCountElements = document.querySelectorAll('#cart-count');
+    cartCountElements.forEach(element => {
+        element.textContent = count;
+        element.style.display = count > 0 ? 'inline' : 'none';
+    });
+}
+
+// Animate cart icon when item is added
+function animateCartIcon() {
+    const cartIcon = document.querySelector('.fa-shopping-cart');
+    if (cartIcon) {
+        cartIcon.classList.add('fa-bounce');
+        setTimeout(() => {
+            cartIcon.classList.remove('fa-bounce');
+        }, 1000);
+    }
+}
+
+// Show toast notification
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('cartToast');
+    const toastMessage = document.getElementById('toastMessage');
+    const toastHeader = toast.querySelector('.toast-header i');
+    
+    toastMessage.textContent = message;
+    
+    // Update toast styling based on type
+    toastHeader.className = type === 'success' 
+        ? 'fas fa-shopping-cart text-success me-2' 
+        : 'fas fa-exclamation-triangle text-danger me-2';
+    
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+}
+
+// Get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Add CSS for cart animation
+const style = document.createElement('style');
+style.textContent = `
+    .fa-bounce {
+        animation: bounce 1s ease;
+    }
+    
+    @keyframes bounce {
+        0%, 100% { transform: scale(1); }
+        25% { transform: scale(1.2); }
+        50% { transform: scale(0.95); }
+        75% { transform: scale(1.1); }
+    }
+    
+    .toast-container {
+        z-index: 9999;
+    }
+`;
+document.head.appendChild(style);
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Check for cart count in localStorage or fetch from server if needed
+    // This is optional - you might already have cart count in the navbar template
+});
+</script>
 
 <!-- Firm Visit Start -->
 <div class="container-fluid bg-primary bg-icon mt-5 py-6">
@@ -407,11 +652,4 @@
 </div>
 <!-- Testimonial End -->
 
-<script>
-function addToCart(productId) {
-    // Add your cart functionality here
-    // You can make an AJAX call to add the product to cart
-    alert('Product added to cart! (Implement cart functionality)');
-}
-</script>
 {% endblock %}
