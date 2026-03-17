@@ -4,6 +4,20 @@
 {% block title %}{{ category.name }} - Products{% endblock %}
 
 {% block content %}
+<!-- Toast notification for cart actions -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999;">
+    <div id="cartToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i class="fas fa-shopping-cart text-success me-2"></i>
+            <strong class="me-auto">Cart Update</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toastMessage">
+            Product added to cart successfully!
+        </div>
+    </div>
+</div>
+
 <!-- Page Header Start -->
 <div class="container-fluid page-header mb-5 wow fadeIn" data-wow-delay="0.1s">
     <div class="container">
@@ -209,14 +223,14 @@
                             <div class="text-center p-4">
                                 <a class="d-block h5 mb-2" href="{{ product.get_absolute_url }}">{{ product.name }}</a>
                                 <div class="mb-2">
-                                    <span class="text-primary me-1 fw-bold">ksh{{ product.selling_price }}</span>
+                                    <span class="text-primary me-1 fw-bold">KSh {{ product.selling_price|floatformat:2 }}</span>
                                     {% if product.discount_price %}
-                                        <span class="text-body text-decoration-line-through">ksh{{ product.price }}</span>
+                                        <span class="text-body text-decoration-line-through">KSh {{ product.price|floatformat:2 }}</span>
                                         <span class="badge bg-danger ms-2">-{{ product.discount_percentage }}%</span>
                                     {% endif %}
                                 </div>
                                 <div class="mt-2">
-                                    <small class="text-muted">{{ product.unit|upper }}</small>
+                                    <small class="text-muted">{{ product.get_unit_display }}</small>
                                     {% if product.brand %}
                                     <small class="text-muted"> | {{ product.brand.name }}</small>
                                     {% endif %}
@@ -236,7 +250,7 @@
                                 </small>
                                 <small class="w-50 text-center py-2">
                                     {% if product.is_in_stock %}
-                                        <a class="text-body" href="#" onclick="addToCart({{ product.id }})">
+                                        <a class="cart-add-link" href="#" onclick="addToCart(event, {{ product.id }})">
                                             <i class="fa fa-shopping-bag text-primary me-2"></i>Add to Cart
                                         </a>
                                     {% else %}
@@ -311,11 +325,168 @@
 </div>
 <!-- Category Products End -->
 
+<style>
+    /* Style for cart add link - looks like a normal link */
+    .cart-add-link {
+        color: #6c757d;
+        text-decoration: none;
+        cursor: pointer;
+        transition: color 0.2s ease;
+    }
+    
+    .cart-add-link:hover {
+        color: #28a745 !important;
+        text-decoration: underline;
+    }
+    
+    .cart-add-link i {
+        transition: transform 0.2s ease;
+    }
+    
+    .cart-add-link:hover i {
+        transform: scale(1.1);
+    }
+    
+    .fa-bounce {
+        animation: bounce 1s ease;
+    }
+    
+    @keyframes bounce {
+        0%, 100% { transform: scale(1); }
+        25% { transform: scale(1.2); }
+        50% { transform: scale(0.95); }
+        75% { transform: scale(1.1); }
+    }
+    
+    .toast-container {
+        z-index: 9999;
+    }
+</style>
+
 <script>
-function addToCart(productId) {
-    // Add your cart functionality here
-    // You can make an AJAX call to add the product to cart
-    alert('Product added to cart! (Implement cart functionality)');
+// Add to cart function - works with the same backend view as product detail page
+async function addToCart(event, productId) {
+    // Prevent default link behavior
+    event.preventDefault();
+    
+    const button = event.target.closest('a');
+    const originalText = button.innerHTML;
+    
+    // Show loading state
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Adding...';
+    button.disabled = true;
+    
+    try {
+        // Create form data
+        const formData = new FormData();
+        formData.append('product_id', productId);
+        formData.append('quantity', 1); // Default quantity of 1 for product list
+        formData.append('csrfmiddlewaretoken', getCookie('csrftoken'));
+        
+        const response = await fetch(`/cart/add/${productId}/`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            
+            if (data.success) {
+                // Show success toast
+                showToast(data.message, 'success');
+                
+                // Update cart count in navbar
+                updateCartCount(data.cart_total);
+                
+                // Animate cart icon
+                animateCartIcon();
+                
+                // Refresh the page after a short delay to show the toast
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showToast(data.message || 'Error adding product to cart', 'error');
+                // Restore button state
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        } else {
+            // Handle redirect response (non-AJAX)
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else {
+                showToast('Product added to cart successfully!', 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Error adding product to cart', 'error');
+        // Restore button state
+        button.innerHTML = originalText;
+        button.disabled = false;
+    }
+}
+
+// Update cart count in navbar
+function updateCartCount(count) {
+    const cartCountElements = document.querySelectorAll('#cart-count');
+    cartCountElements.forEach(element => {
+        element.textContent = count;
+        element.style.display = count > 0 ? 'inline' : 'none';
+    });
+}
+
+// Animate cart icon when item is added
+function animateCartIcon() {
+    const cartIcon = document.querySelector('.fa-shopping-cart');
+    if (cartIcon) {
+        cartIcon.classList.add('fa-bounce');
+        setTimeout(() => {
+            cartIcon.classList.remove('fa-bounce');
+        }, 1000);
+    }
+}
+
+// Show toast notification
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('cartToast');
+    const toastMessage = document.getElementById('toastMessage');
+    const toastHeader = toast.querySelector('.toast-header i');
+    
+    toastMessage.textContent = message;
+    
+    // Update toast styling based on type
+    toastHeader.className = type === 'success' 
+        ? 'fas fa-shopping-cart text-success me-2' 
+        : 'fas fa-exclamation-triangle text-danger me-2';
+    
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+}
+
+// Get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
 }
 
 // Auto-submit filter form when values change
